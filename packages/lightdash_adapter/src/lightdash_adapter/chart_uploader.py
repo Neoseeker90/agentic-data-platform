@@ -2,13 +2,12 @@ from __future__ import annotations
 
 import re
 import subprocess
-from datetime import date, timezone, datetime
+from datetime import UTC, date, datetime
 from pathlib import Path
 from typing import Any
 
 import httpx
-import yaml
-
+import yaml  # type: ignore
 
 _BASE_DIR_NAME = "agent_content"  # {dbt_project}/agent_content/charts/ & /dashboards/
 
@@ -80,7 +79,7 @@ class ChartUploader:
                 },
             }
 
-        now_iso = datetime.now(timezone.utc).strftime("%Y-%m-%dT%H:%M:%S.000Z")
+        now_iso = datetime.now(UTC).strftime("%Y-%m-%dT%H:%M:%S.000Z")
         data: dict = {
             "name": plan.chart_title or plan.intent_summary or "Agent Chart",
             "description": plan.intent_summary or "",
@@ -122,26 +121,28 @@ class ChartUploader:
         dashboard_title: str,
         slug: str,
     ) -> dict:
-        now_iso = datetime.now(timezone.utc).strftime("%Y-%m-%dT%H:%M:%S.000Z")
+        now_iso = datetime.now(UTC).strftime("%Y-%m-%dT%H:%M:%S.000Z")
         return {
             "name": dashboard_title,
             "description": f"Auto-generated dashboard — {chart_name}",
             "updatedAt": now_iso,
-            "tiles": [{
-                "x": 0,
-                "y": 0,
-                "h": 9,
-                "w": 36,
-                "tabUuid": None,
-                "type": "saved_chart",
-                "properties": {
-                    "title": "",
-                    "hideTitle": False,
-                    "chartSlug": chart_slug,
-                    "chartName": chart_name,
-                },
-                "tileSlug": chart_slug,
-            }],
+            "tiles": [
+                {
+                    "x": 0,
+                    "y": 0,
+                    "h": 9,
+                    "w": 36,
+                    "tabUuid": None,
+                    "type": "saved_chart",
+                    "properties": {
+                        "title": "",
+                        "hideTitle": False,
+                        "chartSlug": chart_slug,
+                        "chartName": chart_name,
+                    },
+                    "tileSlug": chart_slug,
+                }
+            ],
             "filters": {"metrics": [], "dimensions": [], "tableCalculations": []},
             "tabs": [],
             "slug": slug,
@@ -168,10 +169,13 @@ class ChartUploader:
         """Run ``lightdash upload -p {base_path} --include-charts --force``."""
         result = subprocess.run(
             [
-                "lightdash", "upload",
-                "--project", self.project_uuid,
+                "lightdash",
+                "upload",
+                "--project",
+                self.project_uuid,
                 "--force",
-                "-p", str(self._base_path),
+                "-p",
+                str(self._base_path),
                 "--include-charts",
             ],
             capture_output=True,
@@ -252,13 +256,11 @@ class ChartUploader:
         dash_uuid = self._get_dashboard_uuid(dashboard_name)
         if dash_uuid:
             dashboard_url = (
-                f"{self.lightdash_url}/projects/{self.project_uuid}"
-                f"/dashboards/{dash_uuid}/view"
+                f"{self.lightdash_url}/projects/{self.project_uuid}/dashboards/{dash_uuid}/view"
             )
         else:
             # Fallback: use slug (won't resolve but better than nothing)
             dashboard_url = (
-                f"{self.lightdash_url}/projects/{self.project_uuid}"
-                f"/dashboards/{dash_slug}/view"
+                f"{self.lightdash_url}/projects/{self.project_uuid}/dashboards/{dash_slug}/view"
             )
         return dash_slug, dashboard_url

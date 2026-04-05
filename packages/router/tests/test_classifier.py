@@ -1,4 +1,5 @@
 """Tests for the Router classifier."""
+
 import json
 from pathlib import Path
 from unittest.mock import AsyncMock, MagicMock
@@ -6,14 +7,14 @@ from unittest.mock import AsyncMock, MagicMock
 import pytest
 
 from contracts.run import Run
-from router import Router, RouterConfig, PromptLoader
+from router import PromptLoader, Router, RouterConfig
 from router.exceptions import ClassificationError, NoSkillsRegisteredError
 from skill_sdk.registry import SkillRegistry
-
 
 # ---------------------------------------------------------------------------
 # Helpers
 # ---------------------------------------------------------------------------
+
 
 def _make_llm_response(payload: dict) -> MagicMock:
     """Wrap a dict as a fake Anthropic messages.create response."""
@@ -27,6 +28,7 @@ def _make_llm_response(payload: dict) -> MagicMock:
 # ---------------------------------------------------------------------------
 # Fixtures
 # ---------------------------------------------------------------------------
+
 
 @pytest.fixture()
 def mock_registry() -> SkillRegistry:
@@ -65,7 +67,9 @@ def prompt_loader() -> PromptLoader:
 
 
 @pytest.fixture()
-def router(mock_registry: SkillRegistry, mock_anthropic: MagicMock, prompt_loader: PromptLoader) -> Router:
+def router(
+    mock_registry: SkillRegistry, mock_anthropic: MagicMock, prompt_loader: PromptLoader
+) -> Router:
     return Router(
         registry=mock_registry,
         anthropic_client=mock_anthropic,
@@ -77,6 +81,7 @@ def router(mock_registry: SkillRegistry, mock_anthropic: MagicMock, prompt_loade
 # ---------------------------------------------------------------------------
 # Tests
 # ---------------------------------------------------------------------------
+
 
 @pytest.mark.asyncio
 async def test_routes_high_confidence_request(

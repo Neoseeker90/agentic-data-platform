@@ -8,6 +8,7 @@ Usage:
     uv run python scripts/run_eval.py --import-cases evals/cases.jsonl
     uv run python scripts/run_eval.py --export-cases evals/export.jsonl
 """
+
 import argparse
 import asyncio
 import sys
@@ -101,16 +102,15 @@ async def main() -> None:
             await dataset.add_case(case)
         print(f"Generated and saved {len(cases)} eval cases")
         if not cases:
-            print(
-                "No cases generated — run with feedback first or lower --score-threshold"
-            )
+            print("No cases generated — run with feedback first or lower --score-threshold")
             return
 
     # Run evaluation
     scorers = [RoutingScorer(), DiscoveryRecallScorer()]
     if not args.no_llm_scorer:
-        from evaluation.scorers.answer_scorer import AnswerQualityScorer
         import anthropic
+
+        from evaluation.scorers.answer_scorer import AnswerQualityScorer
 
         client = anthropic.AsyncAnthropic(api_key=settings.anthropic_api_key)
         scorers.append(AnswerQualityScorer(client))
@@ -128,9 +128,7 @@ async def main() -> None:
     writer.write_markdown(report, md_path)
     writer.write_json(report, json_path)
 
-    print(
-        f"\nResults: {report.passed_cases}/{report.total_cases} passed ({report.pass_rate:.0%})"
-    )
+    print(f"\nResults: {report.passed_cases}/{report.total_cases} passed ({report.pass_rate:.0%})")
     for metric, value in report.metrics.items():
         print(f"  {metric}: {value:.3f}")
     print(f"\nReports written to:\n  {md_path}\n  {json_path}")

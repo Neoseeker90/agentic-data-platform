@@ -1,13 +1,10 @@
 from __future__ import annotations
 
-from uuid import uuid4
-
 import pytest
 
+from answer_business_question.models import BusinessQuestionPlan
 from contracts.context_pack import ContextPack, ContextSource, SourceAuthority, SourceType
 from contracts.run import Run
-
-from answer_business_question.models import BusinessQuestionPlan
 
 
 def _make_run() -> Run:
@@ -102,9 +99,7 @@ async def test_warns_on_low_confidence() -> None:
     validator = BusinessQuestionValidator()
     result = await validator.validate(plan, context)
 
-    confidence_check = next(
-        c for c in result.checks if c.check_name == "low_planning_confidence"
-    )
+    confidence_check = next(c for c in result.checks if c.check_name == "low_planning_confidence")
     assert confidence_check.passed is False
     assert confidence_check.severity == "warning"
     # Still passes overall since no error-level failures

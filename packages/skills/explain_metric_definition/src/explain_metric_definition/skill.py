@@ -43,12 +43,16 @@ class ExplainMetricDefinitionSkill(Skill):
         planning_model: str | None = None,
         execution_model: str | None = None,
     ) -> None:
-        self._planner = ExplainMetricPlanner(anthropic_client, prompt_loader, cost_recorder, planning_model=planning_model)
+        self._planner = ExplainMetricPlanner(
+            anthropic_client, prompt_loader, cost_recorder, planning_model=planning_model
+        )
         self._context_builder = ExplainMetricContextBuilder(
             lightdash_client, lightdash_search, dbt_reader, docs_searcher
         )
         self._validator = ExplainMetricValidator()
-        self._executor = ExplainMetricExecutor(anthropic_client, prompt_loader, cost_recorder, execution_model=execution_model)
+        self._executor = ExplainMetricExecutor(
+            anthropic_client, prompt_loader, cost_recorder, execution_model=execution_model
+        )
         self._formatter = ExplainMetricFormatter()
 
     async def plan(

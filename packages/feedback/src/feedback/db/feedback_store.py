@@ -57,7 +57,7 @@ class FeedbackStore:
 
     async def create(self, record: FeedbackRecord) -> FeedbackRecord:
         async with self._session_factory() as session:
-            session: AsyncSession
+            session: AsyncSession  # type: ignore
             orm = self._from_record(record)
             session.add(orm)
             await session.commit()
@@ -66,10 +66,8 @@ class FeedbackStore:
 
     async def get_by_run(self, run_id: UUID) -> FeedbackRecord | None:
         async with self._session_factory() as session:
-            session: AsyncSession
-            result = await session.execute(
-                select(FeedbackORM).where(FeedbackORM.run_id == run_id)
-            )
+            session: AsyncSession  # type: ignore
+            result = await session.execute(select(FeedbackORM).where(FeedbackORM.run_id == run_id))
             orm = result.scalars().first()
             return self._to_record(orm) if orm is not None else None
 
@@ -80,7 +78,7 @@ class FeedbackStore:
         signal: ImplicitSignal,
     ) -> FeedbackRecord:
         async with self._session_factory() as session:
-            session: AsyncSession
+            session: AsyncSession  # type: ignore
             result = await session.execute(
                 select(FeedbackORM).where(
                     FeedbackORM.run_id == run_id,
@@ -117,7 +115,7 @@ class FeedbackStore:
         limit: int = 100,
     ) -> list[FeedbackRecord]:
         async with self._session_factory() as session:
-            session: AsyncSession
+            session: AsyncSession  # type: ignore
             result = await session.execute(
                 select(FeedbackORM)
                 .where(FeedbackORM.score <= score_threshold)
@@ -132,7 +130,7 @@ class FeedbackStore:
         limit: int = 100,
     ) -> list[FeedbackRecord]:
         async with self._session_factory() as session:
-            session: AsyncSession
+            session: AsyncSession  # type: ignore
             result = await session.execute(
                 select(FeedbackORM)
                 .where(FeedbackORM.failure_reason == reason.value)
@@ -143,10 +141,8 @@ class FeedbackStore:
 
     async def list_recent(self, limit: int = 100) -> list[FeedbackRecord]:
         async with self._session_factory() as session:
-            session: AsyncSession
+            session: AsyncSession  # type: ignore
             result = await session.execute(
-                select(FeedbackORM)
-                .order_by(FeedbackORM.captured_at.desc())
-                .limit(limit)
+                select(FeedbackORM).order_by(FeedbackORM.captured_at.desc()).limit(limit)
             )
             return [self._to_record(row) for row in result.scalars().all()]

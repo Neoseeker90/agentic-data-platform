@@ -43,10 +43,7 @@ class EvalHarness:
             for sr in cr.scorer_results:
                 metric_totals[sr.metric].append(sr.value)
 
-        metrics = {
-            metric: sum(values) / len(values)
-            for metric, values in metric_totals.items()
-        }
+        metrics = {metric: sum(values) / len(values) for metric, values in metric_totals.items()}
 
         # Per-skill metrics
         skill_metric_totals: dict[str, dict[str, list[float]]] = defaultdict(
@@ -58,10 +55,7 @@ class EvalHarness:
                 skill_metric_totals[skill_key][sr.metric].append(sr.value)
 
         per_skill_metrics: dict[str, dict[str, float]] = {
-            skill: {
-                metric: sum(values) / len(values)
-                for metric, values in skill_data.items()
-            }
+            skill: {metric: sum(values) / len(values) for metric, values in skill_data.items()}
             for skill, skill_data in skill_metric_totals.items()
         }
 
@@ -70,7 +64,7 @@ class EvalHarness:
         tag_failed: dict[str, int] = defaultdict(int)
         tag_examples: dict[str, list[UUID]] = defaultdict(list)
 
-        for case, cr in zip(cases, case_results):
+        for case, cr in zip(cases, case_results, strict=False):
             for tag in case.dataset_tags:
                 tag_total[tag] += 1
                 if not cr.passed:

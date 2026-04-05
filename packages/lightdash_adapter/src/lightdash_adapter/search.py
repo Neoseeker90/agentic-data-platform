@@ -9,9 +9,7 @@ class LightdashSearchService:
     def __init__(self, client: LightdashClient) -> None:
         self._client = client
 
-    async def find_relevant_context(
-        self, query: str, max_results: int = 10
-    ) -> list[ContextSource]:
+    async def find_relevant_context(self, query: str, max_results: int = 10) -> list[ContextSource]:
         raw_results = await self._client.search(query)
         context_sources: list[ContextSource] = []
 

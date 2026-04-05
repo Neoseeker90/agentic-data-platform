@@ -25,9 +25,7 @@ class DbtManifestReader:
             ManifestParseError: if the file is not valid JSON or has unexpected structure.
         """
         if not self._manifest_path.exists():
-            raise ManifestNotFoundError(
-                f"manifest.json not found at: {self._manifest_path}"
-            )
+            raise ManifestNotFoundError(f"manifest.json not found at: {self._manifest_path}")
 
         try:
             raw = json.loads(self._manifest_path.read_text(encoding="utf-8"))
@@ -120,9 +118,7 @@ class DbtManifestReader:
         matches: list[DbtModel] = []
 
         for model in self._models.values():
-            searchable = " ".join(
-                [model.name, model.description or ""] + model.tags
-            ).lower()
+            searchable = " ".join([model.name, model.description or ""] + model.tags).lower()
             if query_lower in searchable:
                 matches.append(model)
 

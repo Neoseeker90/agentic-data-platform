@@ -19,8 +19,6 @@ class RouteDecision(BaseModel):
 
     @field_validator("skill_name")
     @classmethod
-    def skill_required_when_not_clarifying(
-        cls, v: str | None, info: object
-    ) -> str | None:
+    def skill_required_when_not_clarifying(cls, v: str | None, info: object) -> str | None:
         # Validation happens at use-site; model is permissive here to allow partial states
         return v

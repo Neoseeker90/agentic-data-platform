@@ -1,7 +1,6 @@
 from __future__ import annotations
 
 import json
-from skill_sdk.json_utils import parse_llm_json
 import logging
 from datetime import UTC, datetime
 from typing import Any
@@ -33,7 +32,12 @@ _SOURCE_TYPE_TO_ASSET_TYPE: dict[SourceType, AssetType] = {
 }
 
 _DASHBOARD_ASSET_TYPES = {AssetType.DASHBOARD}
-_METRIC_ASSET_TYPES = {AssetType.METRIC, AssetType.CHART, AssetType.SEMANTIC_OBJECT, AssetType.DBT_MODEL}
+_METRIC_ASSET_TYPES = {
+    AssetType.METRIC,
+    AssetType.CHART,
+    AssetType.SEMANTIC_OBJECT,
+    AssetType.DBT_MODEL,
+}
 
 
 def _build_candidates_text(sources: list[ContextSource]) -> str:
@@ -122,9 +126,7 @@ class DiscoveryExecutor:
             )
 
         # Build a lookup map from source object_ref -> source
-        source_by_ref: dict[str, ContextSource] = {
-            s.object_ref: s for s in context.sources
-        }
+        source_by_ref: dict[str, ContextSource] = {s.object_ref: s for s in context.sources}
 
         ranked_metrics: list[RankedAsset] = []
         ranked_dashboards: list[RankedAsset] = []

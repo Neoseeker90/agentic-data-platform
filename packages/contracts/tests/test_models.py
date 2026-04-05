@@ -1,19 +1,16 @@
 """Unit tests for all contract models."""
-import pytest
-from uuid import uuid4
-
-from contracts.run import Run, RunState, TERMINAL_STATES
-from contracts.route import RouteDecision
-from contracts.plan import BasePlan
-from contracts.context_pack import ContextPack, ContextSource, SourceAuthority, SourceType
-from contracts.validation import ValidationResult, ValidationCheck
-from contracts.execution import ExecutionResult
-from contracts.cost import TokenCostRecord
-from contracts.feedback import FeedbackRecord, FeedbackFailureReason, ImplicitSignal
-from contracts.artifact import Artifact
-from contracts.evaluation import EvaluationCase
 
 from decimal import Decimal
+from uuid import uuid4
+
+import pytest
+
+from contracts.context_pack import ContextPack, ContextSource, SourceAuthority, SourceType
+from contracts.cost import TokenCostRecord
+from contracts.feedback import FeedbackFailureReason, FeedbackRecord, ImplicitSignal
+from contracts.route import RouteDecision
+from contracts.run import TERMINAL_STATES, Run, RunState
+from contracts.validation import ValidationCheck, ValidationResult
 
 
 class TestRunState:
@@ -49,17 +46,15 @@ class TestRouteDecision:
         assert rd.confidence == 0.9
 
     def test_confidence_bounds(self) -> None:
-        with pytest.raises(Exception):
+        with pytest.raises(Exception):  # noqa: B017
             RouteDecision(run_id=uuid4(), confidence=1.5)
-        with pytest.raises(Exception):
+        with pytest.raises(Exception):  # noqa: B017
             RouteDecision(run_id=uuid4(), confidence=-0.1)
 
 
 class TestContextPack:
     def test_empty_pack(self) -> None:
-        pack = ContextPack(
-            run_id=uuid4(), plan_id=uuid4(), skill_name="test"
-        )
+        pack = ContextPack(run_id=uuid4(), plan_id=uuid4(), skill_name="test")
         assert pack.sources == []
         assert pack.unresolved_ambiguities == []
 
@@ -93,9 +88,9 @@ class TestValidationResult:
 
 class TestFeedbackRecord:
     def test_score_validation(self) -> None:
-        with pytest.raises(Exception):
+        with pytest.raises(Exception):  # noqa: B017
             FeedbackRecord(run_id=uuid4(), user_id="u1", score=6)
-        with pytest.raises(Exception):
+        with pytest.raises(Exception):  # noqa: B017
             FeedbackRecord(run_id=uuid4(), user_id="u1", score=0)
 
     def test_valid_score(self) -> None:

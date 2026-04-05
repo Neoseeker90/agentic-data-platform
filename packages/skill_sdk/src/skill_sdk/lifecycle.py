@@ -88,9 +88,7 @@ class RunOrchestrator:
             raise
         except Exception as exc:
             logger.exception("Run %s failed: %s", run.run_id, exc)
-            run = await self._transition(
-                run, RunState.FAILED, error_message=str(exc)
-            )
+            run = await self._transition(run, RunState.FAILED, error_message=str(exc))
             raise
 
         return run
@@ -138,9 +136,7 @@ class RunOrchestrator:
         await self._auditor.record_execution_result(run, result)
         return run, result
 
-    async def _run_format(
-        self, run: Run, skill: Skill, exec_result: ExecutionResult
-    ) -> Run:
+    async def _run_format(self, run: Run, skill: Skill, exec_result: ExecutionResult) -> Run:
         formatted = await skill.format_result(exec_result)
         await self._auditor.record_final_response(run, formatted)
         return await self._transition(run, RunState.SUCCEEDED)

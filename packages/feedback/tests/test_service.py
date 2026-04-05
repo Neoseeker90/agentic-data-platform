@@ -53,7 +53,7 @@ async def test_capture_explicit_validates_score() -> None:
     store = AsyncMock()
     service = FeedbackService(store=store)
 
-    with pytest.raises(Exception):
+    with pytest.raises(Exception):  # noqa: B017
         await service.capture_explicit(
             run_id=run_id,
             user_id="user-xyz",

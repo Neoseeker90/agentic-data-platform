@@ -41,12 +41,16 @@ class AnswerBusinessQuestionSkill(Skill):
         planning_model: str | None = None,
         execution_model: str | None = None,
     ) -> None:
-        self._planner = BusinessQuestionPlanner(anthropic_client, prompt_loader, cost_recorder, planning_model=planning_model)
+        self._planner = BusinessQuestionPlanner(
+            anthropic_client, prompt_loader, cost_recorder, planning_model=planning_model
+        )
         self._context_builder = BusinessQuestionContextBuilder(
             lightdash_search, dbt_reader, docs_searcher
         )
         self._validator = BusinessQuestionValidator()
-        self._executor = BusinessQuestionExecutor(anthropic_client, prompt_loader, cost_recorder, execution_model=execution_model)
+        self._executor = BusinessQuestionExecutor(
+            anthropic_client, prompt_loader, cost_recorder, execution_model=execution_model
+        )
         self._formatter = BusinessQuestionFormatter()
 
     async def plan(

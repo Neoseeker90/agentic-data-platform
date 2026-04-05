@@ -4,8 +4,8 @@ from __future__ import annotations
 
 import hashlib
 import logging
+from collections.abc import Callable
 from datetime import UTC, datetime
-from typing import Callable
 from uuid import uuid4
 
 from sqlalchemy import select

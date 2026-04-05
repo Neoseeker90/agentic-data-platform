@@ -36,9 +36,7 @@ class Skill(ABC):
         """
 
     @abstractmethod
-    async def validate(
-        self, plan: BasePlan, built_context: ContextPack
-    ) -> ValidationResult:
+    async def validate(self, plan: BasePlan, built_context: ContextPack) -> ValidationResult:
         """Structural and policy validation of the plan against the context.
 
         Returns ValidationResult with passed flag, checks list,
@@ -46,9 +44,7 @@ class Skill(ABC):
         """
 
     @abstractmethod
-    async def execute(
-        self, plan: BasePlan, built_context: ContextPack
-    ) -> ExecutionResult:
+    async def execute(self, plan: BasePlan, built_context: ContextPack) -> ExecutionResult:
         """Deterministic execution based on the validated plan and context.
 
         Execution must not perform freeform LLM calls that are not tightly
@@ -74,8 +70,12 @@ class Skill(ABC):
         """Return list of interfaces this skill supports."""
         return ["web", "teams", "cursor", "cli", "api"]
 
-    def on_before_execute(self, plan: BasePlan, built_context: ContextPack) -> None:
+    def on_before_execute(  # noqa: B027
+        self, plan: BasePlan, built_context: ContextPack
+    ) -> None:
         """Optional pre-execution hook."""
 
-    def on_after_execute(self, result: ExecutionResult) -> None:
+    def on_after_execute(  # noqa: B027
+        self, result: ExecutionResult
+    ) -> None:
         """Optional post-execution hook for cleanup or side effects."""

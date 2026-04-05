@@ -1,6 +1,5 @@
 from __future__ import annotations
 
-import json
 import logging
 
 from contracts.context_pack import ContextPack, ContextSource, SourceAuthority, SourceType
@@ -48,7 +47,9 @@ class DataQueryContextBuilder:
         field_map = {field.field_id: field for field in explore_detail.fields}
 
         # Create ContextSource entries for each requested field
-        all_field_ids = list(dict.fromkeys(plan.dimensions + plan.metrics))  # preserve order, deduplicate
+        all_field_ids = list(
+            dict.fromkeys(plan.dimensions + plan.metrics)
+        )  # preserve order, deduplicate
         sources: list[ContextSource] = []
 
         for idx, field_id in enumerate(all_field_ids):

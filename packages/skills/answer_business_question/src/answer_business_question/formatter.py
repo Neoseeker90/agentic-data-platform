@@ -20,10 +20,7 @@ class BusinessQuestionFormatter:
             parts.append("---")
             parts.append("**References**")
             for ref in bq_result.trusted_references:
-                if ref.url:
-                    link = f"[{ref.name}]({ref.url})"
-                else:
-                    link = ref.name
+                link = f"[{ref.name}]({ref.url})" if ref.url else ref.name
                 parts.append(f"- {link} — {ref.ref_type}")
 
         if bq_result.caveat:

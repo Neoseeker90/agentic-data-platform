@@ -56,9 +56,11 @@ class ExecuteDataQuestionSkill(Skill):
             base_url = str(lightdash_client._client.base_url).rstrip("/")
             project_uuid = lightdash_client._project_uuid
             if base_url and project_uuid:
-                api_key = getattr(lightdash_client._client, "headers", {}).get(
-                    "authorization", ""
-                ).replace("ApiKey ", "")
+                api_key = (
+                    getattr(lightdash_client._client, "headers", {})
+                    .get("authorization", "")
+                    .replace("ApiKey ", "")
+                )
                 chart_uploader = ChartUploader(
                     lightdash_url=base_url,
                     project_uuid=project_uuid,

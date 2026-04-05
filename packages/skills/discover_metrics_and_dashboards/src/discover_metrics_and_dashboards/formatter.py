@@ -54,10 +54,7 @@ def _format_metric_line(asset: RankedAsset) -> str:
 
 
 def _format_dashboard_line(asset: RankedAsset) -> str:
-    if asset.url:
-        name_part = f"[{asset.name}]({asset.url})"
-    else:
-        name_part = asset.name
+    name_part = f"[{asset.name}]({asset.url})" if asset.url else asset.name
     header = f"- **{name_part}** — {asset.reason}"
     if asset.description:
         return f"{header}\n  {asset.description}"

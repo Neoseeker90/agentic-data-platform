@@ -1,18 +1,15 @@
 import json
 import logging
 from datetime import UTC, datetime
+from typing import Any
 from uuid import UUID
 
-from typing import Any
-
-import anthropic
 from contracts.route import RouteDecision
 from contracts.run import Run
-from skill_sdk.registry import SkillRegistry
-
 from router.config import RouterConfig
 from router.exceptions import ClassificationError, NoSkillsRegisteredError
 from router.prompt import PromptLoader
+from skill_sdk.registry import SkillRegistry
 
 logger = logging.getLogger(__name__)
 
@@ -36,9 +33,7 @@ class Router:
         """Classify run.request_text and return a RouteDecision."""
         skills = self._registry.list_skills()
         if not skills:
-            raise NoSkillsRegisteredError(
-                "Cannot route request: no skills are registered."
-            )
+            raise NoSkillsRegisteredError("Cannot route request: no skills are registered.")
 
         skills_list = "\n".join(
             f"- {s['name']} (v{s['version']}, risk={s['risk_level']}): {s['description']}"
@@ -76,9 +71,7 @@ class Router:
         try:
             return json.loads(raw_text)
         except json.JSONDecodeError as exc:
-            raise ClassificationError(
-                f"LLM returned non-JSON output: {raw_text!r}"
-            ) from exc
+            raise ClassificationError(f"LLM returned non-JSON output: {raw_text!r}") from exc
 
     def _build_route_decision(self, run_id: UUID, raw: dict) -> RouteDecision:
         """Apply confidence thresholds and construct a RouteDecision."""
@@ -92,9 +85,7 @@ class Router:
 
         # In the medium band, ensure candidate_skills is populated.
         if (
-            self.config.clarification_threshold
-            <= confidence
-            < self.config.confidence_threshold
+            self.config.clarification_threshold <= confidence < self.config.confidence_threshold
             and not candidate_skills
             and raw.get("skill_name")
         ):

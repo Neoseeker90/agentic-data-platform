@@ -5,7 +5,6 @@ from datetime import UTC, datetime
 from uuid import UUID
 
 from contracts.feedback import FeedbackFailureReason, FeedbackRecord, ImplicitSignal
-
 from feedback.db.feedback_store import FeedbackStore
 
 

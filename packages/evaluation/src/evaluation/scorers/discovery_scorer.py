@@ -20,9 +20,7 @@ class DiscoveryRecallScorer(BaseScorer):
                 detail="no expected refs",
             )
         found = sum(
-            1
-            for ref in case.expected_asset_refs
-            if ref.lower() in observed_response.lower()
+            1 for ref in case.expected_asset_refs if ref.lower() in observed_response.lower()
         )
         recall = found / len(case.expected_asset_refs)
         return ScorerResult(

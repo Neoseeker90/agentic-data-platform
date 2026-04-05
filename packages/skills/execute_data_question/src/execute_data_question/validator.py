@@ -66,8 +66,12 @@ class DataQueryValidator:
 
         if explore_detail is not None:
             valid_field_ids = {field.field_id for field in explore_detail.fields}
-            metric_field_ids = {f.field_id for f in explore_detail.fields if f.field_type == "metric"}
-            dimension_field_ids = {f.field_id for f in explore_detail.fields if f.field_type == "dimension"}
+            metric_field_ids = {
+                f.field_id for f in explore_detail.fields if f.field_type == "metric"
+            }
+            dimension_field_ids = {
+                f.field_id for f in explore_detail.fields if f.field_type == "dimension"
+            }
 
             all_requested = set(plan.dimensions) | set(plan.metrics)
             missing_fields = all_requested - valid_field_ids

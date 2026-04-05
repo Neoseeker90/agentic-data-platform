@@ -21,7 +21,6 @@ class ExplainMetricValidator:
         # Check 1: metric_found — hard fail if no sources at all
         no_sources = len(context.sources) == 0
         has_primary = any(s.authority == SourceAuthority.PRIMARY for s in context.sources)
-        metric_found = has_primary or len(context.sources) > 0
 
         checks.append(
             ValidationCheck(

@@ -90,10 +90,9 @@ class CostRecorder:
         output_rate = self.COST_PER_1K_OUTPUT.get(
             model_id, self.COST_PER_1K_OUTPUT[self._FALLBACK_MODEL]
         )
-        return (
-            Decimal(prompt_tokens) * input_rate / Decimal(1000)
-            + Decimal(completion_tokens) * output_rate / Decimal(1000)
-        )
+        return Decimal(prompt_tokens) * input_rate / Decimal(1000) + Decimal(
+            completion_tokens
+        ) * output_rate / Decimal(1000)
 
     async def record(
         self,
@@ -124,11 +123,11 @@ class CostRecorder:
             recorded_at=datetime.now(UTC),
         )
         if self._store is not None:
-            await self._store.save(record)
+            await self._store.save(record)  # type: ignore
         return record
 
     @staticmethod
-    def timer() -> "CostTimer":
+    def timer() -> CostTimer:
         """Return a new :class:`CostTimer` context manager."""
         return CostTimer()
 
@@ -140,7 +139,7 @@ class CostTimer:
         self._start: float | None = None
         self._end: float | None = None
 
-    def __enter__(self) -> "CostTimer":
+    def __enter__(self) -> CostTimer:
         self._start = time.monotonic()
         return self
 
@@ -154,5 +153,7 @@ class CostTimer:
         Raises ``RuntimeError`` if the timer has not been started and stopped.
         """
         if self._start is None or self._end is None:
-            raise RuntimeError("CostTimer must be used as a context manager before reading elapsed_ms")
+            raise RuntimeError(
+                "CostTimer must be used as a context manager before reading elapsed_ms"
+            )
         return int((self._end - self._start) * 1000)

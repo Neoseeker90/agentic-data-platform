@@ -1,13 +1,11 @@
 from __future__ import annotations
 
 from unittest.mock import AsyncMock, MagicMock
-from uuid import uuid4
 
 import pytest
 
 from contracts.context_pack import ContextSource, SourceAuthority, SourceType
 from contracts.run import Run
-
 from explain_metric_definition.models import ExplainMetricPlan
 
 

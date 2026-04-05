@@ -51,11 +51,11 @@ class ExplainMetricContextBuilder:
 
         all_sources: list[ContextSource] = []
         for result in (
-            lightdash_metric_sources,
-            dbt_metric_sources,
-            kpi_glossary_sources,
-            business_logic_sources,
-            related_dashboard_sources,
+            lightdash_metric_sources,  # type: ignore
+            dbt_metric_sources,  # type: ignore
+            kpi_glossary_sources,  # type: ignore
+            business_logic_sources,  # type: ignore
+            related_dashboard_sources,  # type: ignore
         ):
             if isinstance(result, Exception):
                 logger.warning("Context retrieval subtask failed: %s", result)
@@ -124,13 +124,13 @@ class ExplainMetricContextBuilder:
         return await self._docs.to_context_sources(results)
 
     async def _get_related_dashboards(self, metric_name: str) -> list[ContextSource]:
-        sources = await self._lightdash_search.find_relevant_context(
-            metric_name, max_results=5
-        )
+        sources = await self._lightdash_search.find_relevant_context(metric_name, max_results=5)
         # Keep only dashboard-type results for related dashboards context
         return [
-            s for s in sources
-            if s.source_type in (
+            s
+            for s in sources
+            if s.source_type
+            in (
                 SourceType.LIGHTDASH_DASHBOARD,
                 SourceType.LIGHTDASH_CHART,
             )

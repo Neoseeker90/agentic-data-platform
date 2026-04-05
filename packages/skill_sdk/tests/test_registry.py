@@ -1,13 +1,15 @@
 """Tests for SkillRegistry."""
-import pytest
+
 from unittest.mock import MagicMock
 
-from skill_sdk.registry import SkillRegistry
+import pytest
+
 from skill_sdk.exceptions import SkillNotFoundError
+from skill_sdk.registry import SkillRegistry
 
 
 @pytest.fixture(autouse=True)
-def reset_registry() -> None:
+def reset_registry() -> None:  # type: ignore
     SkillRegistry.reset()
     yield
     SkillRegistry.reset()

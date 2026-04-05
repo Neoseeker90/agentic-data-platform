@@ -3,14 +3,13 @@ from __future__ import annotations
 import uuid
 from datetime import UTC, datetime
 from typing import Any
-from unittest.mock import MagicMock, call, patch
+from unittest.mock import patch
 
 import pytest
 
 from agent_api.db.models import FeedbackORM
 from contracts.feedback import FeedbackRecord, ImplicitSignal
 from feedback.db.feedback_store import FeedbackStore
-
 
 # ---------------------------------------------------------------------------
 # Session / factory helpers
@@ -119,6 +118,7 @@ async def test_create_persists_feedback_orm() -> None:
     orm_to_return = _make_orm(record)
 
     session = _MockSession(execute_returns=[[]])
+
     # After add+commit+refresh, scalars will return our orm
     # But create() doesn't call execute — it just calls add/commit/refresh.
     # We need refresh to populate the orm so _to_record works.
@@ -134,7 +134,7 @@ async def test_create_persists_feedback_orm() -> None:
 
     # Patch _from_record to return our orm_to_return so we can track `add`
     with patch.object(FeedbackStore, "_from_record", return_value=orm_to_return):
-        result = await store.create(record)
+        await store.create(record)
 
     assert session.added == [orm_to_return]
     assert session.committed is True

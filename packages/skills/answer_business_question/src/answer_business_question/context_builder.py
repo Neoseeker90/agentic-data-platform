@@ -57,7 +57,7 @@ class BusinessQuestionContextBuilder:
             if isinstance(result, Exception):
                 logger.warning("Context retrieval subtask failed: %s", result)
                 continue
-            all_sources.extend(result)
+            all_sources.extend(result)  # type: ignore
 
         # 4. Deduplicate by object_ref (keep first seen)
         seen_refs: set[str] = set()
@@ -75,8 +75,7 @@ class BusinessQuestionContextBuilder:
         for term in plan.ambiguous_terms:
             term_lower = term.lower()
             matched = any(
-                term_lower in s.object_ref.lower() or term_lower in s.label.lower()
-                for s in capped
+                term_lower in s.object_ref.lower() or term_lower in s.label.lower() for s in capped
             )
             if not matched:
                 unresolved.append(term)

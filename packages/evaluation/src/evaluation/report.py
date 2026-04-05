@@ -87,9 +87,7 @@ class EvalReportWriter:
             lines.append("| Tag | Count | Failure Rate |")
             lines.append("| --- | --- | --- |")
             for cluster in report.failure_clusters:
-                lines.append(
-                    f"| {cluster.tag} | {cluster.count} | {cluster.failure_rate:.0%} |"
-                )
+                lines.append(f"| {cluster.tag} | {cluster.count} | {cluster.failure_rate:.0%} |")
         else:
             lines.append("_No failure clusters._")
         lines.append("")

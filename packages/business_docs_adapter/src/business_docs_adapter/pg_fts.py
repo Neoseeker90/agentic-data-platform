@@ -69,9 +69,7 @@ class PgFtsSearcher:
         finally:
             await conn.close()
 
-    async def to_context_sources(
-        self, results: list[BusinessDocResult]
-    ) -> list[ContextSource]:
+    async def to_context_sources(self, results: list[BusinessDocResult]) -> list[ContextSource]:
         context_sources: list[ContextSource] = []
 
         for result in results:

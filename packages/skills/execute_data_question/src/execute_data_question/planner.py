@@ -1,15 +1,14 @@
 from __future__ import annotations
 
 import json
-from skill_sdk.json_utils import parse_llm_json
 import logging
-import uuid
 from datetime import UTC, datetime
 from typing import Any
 
 from contracts.run import Run
 from lightdash_adapter.client import LightdashClient
 from skill_sdk.exceptions import ClarificationNeeded, PlanningError
+from skill_sdk.json_utils import parse_llm_json
 
 from .models import DataQueryPlan
 
@@ -39,7 +38,9 @@ def _build_catalogue(explore_details: list[Any]) -> str:
         metrics = [f for f in detail.fields if f.field_type == "metric"]
         dimensions = [f for f in detail.fields if f.field_type == "dimension"]
 
-        lines.append("   METRICS (use these in the 'metrics' array — these are aggregated measures):")
+        lines.append(
+            "   METRICS (use these in the 'metrics' array — these are aggregated measures):"
+        )
         if metrics:
             for field in metrics:
                 desc = f" — {field.description[:80]}" if field.description else ""
@@ -47,7 +48,9 @@ def _build_catalogue(explore_details: list[Any]) -> str:
         else:
             lines.append("     (none)")
 
-        lines.append("   DIMENSIONS (use these in the 'dimensions' array — these are grouping/filter fields):")
+        lines.append(
+            "   DIMENSIONS (use these in the 'dimensions' array — these are grouping/filter fields):"
+        )
         for field in dimensions[:40]:  # cap dimensions to keep prompt size reasonable
             lines.append(f"     - {field.field_id} | {field.label} | type={field.type}")
         if len(dimensions) > 40:
@@ -155,9 +158,7 @@ class DataQueryPlanner:
         try:
             raw = parse_llm_json(raw_text)
         except json.JSONDecodeError as exc:
-            raise PlanningError(
-                f"Planner LLM returned non-JSON output: {raw_text!r}"
-            ) from exc
+            raise PlanningError(f"Planner LLM returned non-JSON output: {raw_text!r}") from exc
 
         # Step 8b: Check if the LLM returned a clarification request instead of a plan
         if raw.get("type") == "clarification":

@@ -4,7 +4,6 @@ import pytest
 
 from contracts.context_pack import ContextPack, ContextSource, SourceAuthority, SourceType
 from contracts.run import Run
-
 from explain_metric_definition.models import ExplainMetricPlan
 
 

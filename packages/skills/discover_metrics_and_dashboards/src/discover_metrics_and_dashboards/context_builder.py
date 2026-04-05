@@ -53,7 +53,7 @@ class DiscoveryContextBuilder:
             if isinstance(result, Exception):
                 logger.warning("Context retrieval subtask failed: %s", result)
                 continue
-            all_sources.extend(result)
+            all_sources.extend(result)  # type: ignore
 
         # Deduplicate by object_ref (keep first seen)
         seen_refs: set[str] = set()

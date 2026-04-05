@@ -63,6 +63,7 @@ class DataQueryFormatter:
             parts.append(data.answer_text)
 
         if data.chart_url:
+
             def _label(fid: str) -> str:
                 meta = data.fields_metadata.get(fid, {})
                 return meta.get("label") or fid

@@ -2,7 +2,6 @@ from __future__ import annotations
 
 import asyncio
 import json
-from skill_sdk.json_utils import parse_llm_json
 import logging
 from datetime import UTC, datetime
 from typing import Any
@@ -56,18 +55,22 @@ def _convert_filters(filters: dict) -> dict:
             for clause in value_list:
                 if not isinstance(clause, dict) or "operator" not in clause:
                     continue
-                and_clauses.append({
-                    "id": str(_uuid.uuid4())[:8],
-                    "target": {"fieldId": field_id, "tableName": table_name},
-                    "operator": clause["operator"],
-                    "values": clause.get("values", []),
-                    **({"settings": clause["settings"]} if "settings" in clause else {}),
-                })
+                and_clauses.append(
+                    {
+                        "id": str(_uuid.uuid4())[:8],
+                        "target": {"fieldId": field_id, "tableName": table_name},
+                        "operator": clause["operator"],
+                        "values": clause.get("values", []),
+                        **({"settings": clause["settings"]} if "settings" in clause else {}),
+                    }
+                )
 
         if and_clauses:
             result[filter_group] = {"and": and_clauses}
 
     return result
+
+
 _DEFAULT_MODEL_ID = "claude-3-haiku-20240307"
 _MAX_TOKENS = 1024
 _MAX_PREVIEW_ROWS = 20
@@ -179,9 +182,7 @@ class DataQueryExecutor:
                         )
                     logger.info("Created Lightdash chart/dashboard at %s", chart_url)
                 except Exception as exc:
-                    logger.warning(
-                        "Chart upload failed, falling back to explore URL: %s", exc
-                    )
+                    logger.warning("Chart upload failed, falling back to explore URL: %s", exc)
                     chart_url = self._lightdash_client.build_explore_url(
                         plan.explore_name, plan.dimensions, plan.metrics
                     )
@@ -257,9 +258,7 @@ class DataQueryExecutor:
                 fields_metadata=fields_metadata,
             )
         except Exception as exc:
-            raise ExecutionError(
-                f"Failed to construct DataQueryResult: {exc}"
-            ) from exc
+            raise ExecutionError(f"Failed to construct DataQueryResult: {exc}") from exc
 
         logger.info(
             "Executed plan_id=%s rows=%d answer_type=%s chart=%s",

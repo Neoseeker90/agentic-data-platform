@@ -3,7 +3,6 @@ from __future__ import annotations
 import json
 from pathlib import Path
 from unittest.mock import AsyncMock, MagicMock
-from uuid import uuid4
 
 import pytest
 
@@ -11,9 +10,7 @@ from contracts.run import Run
 from skill_sdk.exceptions import PlanningError
 
 # Ensure the prompts directory is discoverable by using an absolute path
-_PROMPTS_DIR = (
-    Path(__file__).parent.parent / "prompts"
-)
+_PROMPTS_DIR = Path(__file__).parent.parent / "prompts"
 
 
 def _make_prompt_loader() -> MagicMock:
@@ -86,7 +83,7 @@ async def test_plan_raises_on_invalid_json() -> None:
 async def test_plan_sets_run_id() -> None:
     from answer_business_question.planner import BusinessQuestionPlanner
 
-    response_payload = {
+    response_payload = {  # type: ignore
         "question_type": "general",
         "identified_metrics": [],
         "identified_dimensions": [],

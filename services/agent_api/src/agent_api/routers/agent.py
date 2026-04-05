@@ -20,8 +20,8 @@ from agent_api.dependencies import (
     get_session_store,
 )
 from agent_api.schemas.requests import AskRequest, ClarificationRequest
-from agent_api.schemas.responses import AskResponse, RunStatusResponse
-from contracts.run import RunState, TERMINAL_STATES
+from agent_api.schemas.responses import AskResponse
+from contracts.run import RunState
 from skill_sdk.conversation import build_contextual_request
 
 logger = logging.getLogger(__name__)
@@ -99,7 +99,9 @@ async def _route_and_execute(
                 RunState.CREATED,
                 error_message=decision.clarification_message,
             )
-            logger.info("Run %s needs router clarification: %s", run.run_id, decision.clarification_message)
+            logger.info(
+                "Run %s needs router clarification: %s", run.run_id, decision.clarification_message
+            )
             await session_store.save_turn(
                 session_id=session_id,
                 role="assistant",
@@ -204,6 +206,8 @@ async def submit_clarification(
     platform_router = get_platform_router(request)
     orchestrator = get_orchestrator(request)
     asyncio.create_task(
-        _route_and_execute(new_run, platform_router, run_store, orchestrator, session_id, session_store)
+        _route_and_execute(
+            new_run, platform_router, run_store, orchestrator, session_id, session_store
+        )
     )
     return AskResponse(run_id=new_run.run_id, state=str(new_run.state), session_id=session_id)

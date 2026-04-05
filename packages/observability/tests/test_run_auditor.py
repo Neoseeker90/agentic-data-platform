@@ -4,7 +4,7 @@ from __future__ import annotations
 
 import hashlib
 from contextlib import asynccontextmanager
-from unittest.mock import AsyncMock, MagicMock, patch
+from unittest.mock import AsyncMock, MagicMock
 from uuid import uuid4
 
 import pytest
@@ -14,7 +14,6 @@ from contracts.execution import ExecutionResult
 from contracts.plan import BasePlan
 from contracts.run import Run, RunState
 from contracts.validation import ValidationResult
-
 
 # ---------------------------------------------------------------------------
 # Helpers

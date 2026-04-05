@@ -2,9 +2,9 @@
 
 from __future__ import annotations
 
-import json
 import logging
-from typing import TYPE_CHECKING, Callable
+from collections.abc import Callable
+from typing import TYPE_CHECKING
 
 from sqlalchemy import select
 from sqlalchemy.dialects.postgresql import insert as pg_insert
@@ -93,7 +93,7 @@ class RunAuditor:
             and len(context_pack.sources) > _CONTEXT_PACK_S3_SOURCE_THRESHOLD
         ):
             try:
-                artifact_key = await self._artifact_store.store_json(
+                artifact_key = await self._artifact_store.store_json(  # type: ignore
                     run_id=str(run.run_id),
                     artifact_type="context_pack",
                     data=context_pack.model_dump(mode="json"),
@@ -104,9 +104,7 @@ class RunAuditor:
                     run.run_id,
                 )
             except Exception:
-                logger.exception(
-                    "Failed to archive context_pack to S3 for run_id=%s", run.run_id
-                )
+                logger.exception("Failed to archive context_pack to S3 for run_id=%s", run.run_id)
 
         async with self._session_factory() as session:
             session.add(
@@ -129,9 +127,7 @@ class RunAuditor:
                 context_pack.pack_id,
             )
 
-    async def record_validation_result(
-        self, run: Run, result: ValidationResult
-    ) -> None:
+    async def record_validation_result(self, run: Run, result: ValidationResult) -> None:
         """Insert a ValidationResultORM row."""
         async with self._session_factory() as session:
             session.add(
@@ -154,9 +150,7 @@ class RunAuditor:
                 result.passed,
             )
 
-    async def record_execution_result(
-        self, run: Run, result: ExecutionResult
-    ) -> None:
+    async def record_execution_result(self, run: Run, result: ExecutionResult) -> None:
         """Insert an ExecutionResultORM row."""
         async with self._session_factory() as session:
             session.add(

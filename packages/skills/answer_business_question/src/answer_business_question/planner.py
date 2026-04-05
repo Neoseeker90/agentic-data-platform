@@ -1,13 +1,13 @@
 from __future__ import annotations
 
 import json
-from skill_sdk.json_utils import parse_llm_json
 import logging
 from datetime import UTC, datetime
 from typing import Any
 
 from contracts.run import Run
 from skill_sdk.exceptions import PlanningError
+from skill_sdk.json_utils import parse_llm_json
 
 from .models import BusinessQuestionPlan
 
@@ -60,9 +60,7 @@ class BusinessQuestionPlanner:
         try:
             raw = parse_llm_json(raw_text)
         except json.JSONDecodeError as exc:
-            raise PlanningError(
-                f"Planner LLM returned non-JSON output: {raw_text!r}"
-            ) from exc
+            raise PlanningError(f"Planner LLM returned non-JSON output: {raw_text!r}") from exc
 
         try:
             plan = BusinessQuestionPlan(

@@ -2,13 +2,12 @@ from __future__ import annotations
 
 import uuid
 from contextlib import asynccontextmanager
-from unittest.mock import AsyncMock, MagicMock, patch
+from unittest.mock import AsyncMock, MagicMock
 
 import pytest
 
 from contracts.feedback import FeedbackFailureReason
 from evaluation.case_generator import EvalCaseGenerator, derive_tags
-
 
 # ---------------------------------------------------------------------------
 # Helpers
@@ -69,9 +68,7 @@ def _make_session_factory(run=None, feedback=None, exec_result=None):
         er_scalar = MagicMock()
         er_scalar.scalar_one_or_none = MagicMock(return_value=exec_result)
 
-        session.execute = AsyncMock(
-            side_effect=[run_scalar, fb_scalar, er_scalar]
-        )
+        session.execute = AsyncMock(side_effect=[run_scalar, fb_scalar, er_scalar])
         yield session
 
     return _factory
@@ -95,7 +92,9 @@ async def test_generate_from_run_returns_none_when_no_feedback():
 @pytest.mark.asyncio
 async def test_generate_from_run_builds_case():
     run_id = uuid.uuid4()
-    run = _fake_run(run_id=run_id, request_text="Show revenue", selected_skill="answer_business_question")
+    run = _fake_run(
+        run_id=run_id, request_text="Show revenue", selected_skill="answer_business_question"
+    )
     feedback = _fake_feedback(run_id=run_id, score=2, failure_reason=None)
     exec_result = _fake_exec_result(formatted_response="Revenue is $500K.")
     factory = _make_session_factory(run=run, feedback=feedback, exec_result=exec_result)

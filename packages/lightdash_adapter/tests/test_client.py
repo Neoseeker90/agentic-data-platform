@@ -7,10 +7,10 @@ import httpx
 import pytest
 import respx
 
+from contracts.context_pack import ContextSource, SourceType
 from lightdash_adapter.client import LightdashClient
 from lightdash_adapter.exceptions import LightdashAuthError, LightdashNotFoundError
 from lightdash_adapter.search import LightdashSearchService
-from contracts.context_pack import ContextSource, SourceType
 
 FIXTURES_DIR = Path(__file__).parent / "fixtures"
 BASE_URL = "https://lightdash.example.com"
@@ -35,9 +35,7 @@ def make_client(http_client: httpx.AsyncClient) -> LightdashClient:
 @respx.mock
 async def test_search_returns_context_sources() -> None:
     fixture = load_fixture("metric_list.json")
-    respx.get(SEARCH_URL).mock(
-        return_value=httpx.Response(200, json=fixture)
-    )
+    respx.get(SEARCH_URL).mock(return_value=httpx.Response(200, json=fixture))
 
     async with httpx.AsyncClient(base_url=BASE_URL) as http:
         client = make_client(http)
@@ -52,9 +50,7 @@ async def test_search_returns_context_sources() -> None:
 @pytest.mark.asyncio
 @respx.mock
 async def test_auth_error_raises() -> None:
-    respx.get(SEARCH_URL).mock(
-        return_value=httpx.Response(401, json={"message": "Unauthorized"})
-    )
+    respx.get(SEARCH_URL).mock(return_value=httpx.Response(401, json={"message": "Unauthorized"}))
 
     async with httpx.AsyncClient(base_url=BASE_URL) as http:
         client = make_client(http)
@@ -65,9 +61,7 @@ async def test_auth_error_raises() -> None:
 @pytest.mark.asyncio
 @respx.mock
 async def test_not_found_raises() -> None:
-    respx.get(SEARCH_URL).mock(
-        return_value=httpx.Response(404, json={"message": "Not found"})
-    )
+    respx.get(SEARCH_URL).mock(return_value=httpx.Response(404, json={"message": "Not found"}))
 
     async with httpx.AsyncClient(base_url=BASE_URL) as http:
         client = make_client(http)
@@ -79,9 +73,7 @@ async def test_not_found_raises() -> None:
 @respx.mock
 async def test_search_service_maps_to_context_sources() -> None:
     fixture = load_fixture("metric_list.json")
-    respx.get(SEARCH_URL).mock(
-        return_value=httpx.Response(200, json=fixture)
-    )
+    respx.get(SEARCH_URL).mock(return_value=httpx.Response(200, json=fixture))
 
     async with httpx.AsyncClient(base_url=BASE_URL) as http:
         client = make_client(http)

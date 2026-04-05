@@ -2,6 +2,7 @@ import uuid
 from datetime import datetime
 
 from sqlalchemy import (
+    TIMESTAMP,
     Boolean,
     ForeignKey,
     Integer,
@@ -10,11 +11,10 @@ from sqlalchemy import (
     Text,
     func,
 )
-from sqlalchemy import TIMESTAMP
 from sqlalchemy.dialects.postgresql import JSONB, UUID
+from sqlalchemy.orm import DeclarativeBase, Mapped, mapped_column
 
 TIMESTAMPTZ = TIMESTAMP(timezone=True)
-from sqlalchemy.orm import DeclarativeBase, Mapped, mapped_column
 
 
 class Base(DeclarativeBase):

@@ -1,4 +1,5 @@
 """Tests for Skill ABC."""
+
 import pytest
 
 from skill_sdk.base import Skill

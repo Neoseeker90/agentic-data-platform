@@ -9,9 +9,7 @@ from typing import Any
 
 import structlog
 
-run_id_var: contextvars.ContextVar[str | None] = contextvars.ContextVar(
-    "run_id", default=None
-)
+run_id_var: contextvars.ContextVar[str | None] = contextvars.ContextVar("run_id", default=None)
 skill_name_var: contextvars.ContextVar[str | None] = contextvars.ContextVar(
     "skill_name", default=None
 )

@@ -1,14 +1,12 @@
 from __future__ import annotations
 
-from unittest.mock import AsyncMock, MagicMock, patch
-from uuid import uuid4
+from unittest.mock import AsyncMock, MagicMock
 
 import pytest
 
+from answer_business_question.models import BusinessQuestionPlan
 from contracts.context_pack import ContextSource, SourceAuthority, SourceType
 from contracts.run import Run
-
-from answer_business_question.models import BusinessQuestionPlan
 
 
 def _make_run(request_text: str = "What is our churn rate?") -> Run:
@@ -34,7 +32,9 @@ def _make_plan(
     )
 
 
-def _make_context_source(object_ref: str, authority: SourceAuthority = SourceAuthority.PRIMARY) -> ContextSource:
+def _make_context_source(
+    object_ref: str, authority: SourceAuthority = SourceAuthority.PRIMARY
+) -> ContextSource:
     return ContextSource(
         source_type=SourceType.LIGHTDASH_METRIC,
         authority=authority,

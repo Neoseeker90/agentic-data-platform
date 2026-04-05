@@ -9,7 +9,6 @@ from contracts.evaluation import EvaluationCase
 from evaluation.harness import EvalHarness
 from evaluation.scorers.base import BaseScorer, ScorerResult
 
-
 # ---------------------------------------------------------------------------
 # Helpers
 # ---------------------------------------------------------------------------

@@ -50,11 +50,9 @@ class EvalCaseGenerator:
 
     async def generate_from_run(self, run_id: UUID) -> EvaluationCase | None:
         async with self._session_factory() as session:
-            session: AsyncSession
+            session: AsyncSession  # type: ignore
 
-            run_result = await session.execute(
-                select(RunORM).where(RunORM.run_id == run_id)
-            )
+            run_result = await session.execute(select(RunORM).where(RunORM.run_id == run_id))
             run = run_result.scalar_one_or_none()
             if run is None:
                 logger.warning("Run %s not found", run_id)
@@ -116,7 +114,7 @@ class EvalCaseGenerator:
         limit: int = 50,
     ) -> list[EvaluationCase]:
         async with self._session_factory() as session:
-            session: AsyncSession
+            session: AsyncSession  # type: ignore
             result = await session.execute(
                 select(FeedbackORM.run_id)
                 .where(FeedbackORM.score <= score_threshold)
@@ -138,7 +136,7 @@ class EvalCaseGenerator:
         limit: int = 100,
     ) -> list[EvaluationCase]:
         async with self._session_factory() as session:
-            session: AsyncSession
+            session: AsyncSession  # type: ignore
             result = await session.execute(
                 select(RunORM.run_id)
                 .where(RunORM.state == RunState.SUCCEEDED)
@@ -153,11 +151,9 @@ class EvalCaseGenerator:
         cases: list[EvaluationCase] = []
         for run_id in sampled:
             async with self._session_factory() as session:
-                session: AsyncSession
+                session: AsyncSession  # type: ignore
 
-                run_result = await session.execute(
-                    select(RunORM).where(RunORM.run_id == run_id)
-                )
+                run_result = await session.execute(select(RunORM).where(RunORM.run_id == run_id))
                 run = run_result.scalar_one_or_none()
                 if run is None:
                     continue

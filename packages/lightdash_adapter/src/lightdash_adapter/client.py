@@ -7,7 +7,15 @@ from .exceptions import (
     LightdashConnectionError,
     LightdashNotFoundError,
 )
-from .models import LightdashDashboard, LightdashMetric, LightdashSearchResult
+from .models import (
+    ExploreDetail,
+    ExploreField,
+    LightdashDashboard,
+    LightdashMetric,
+    LightdashSearchResult,
+    LightdashSpace,
+    QueryResult,
+)
 
 
 class LightdashClient:
@@ -36,9 +44,7 @@ class LightdashClient:
             raise LightdashConnectionError(str(exc)) from exc
 
         if response.status_code in (401, 403):
-            raise LightdashAuthError(
-                f"Authentication failed ({response.status_code}): {url}"
-            )
+            raise LightdashAuthError(f"Authentication failed ({response.status_code}): {url}")
         if response.status_code == 404:
             raise LightdashNotFoundError(f"Resource not found: {url}")
 
@@ -135,9 +141,7 @@ class LightdashClient:
 
     async def search(self, query: str) -> list[LightdashSearchResult]:
         """Search across metrics, dashboards, charts, and dimensions."""
-        data = await self._get(
-            f"/api/v1/projects/{self._project_uuid}/search/{query}"
-        )
+        data = await self._get(f"/api/v1/projects/{self._project_uuid}/search/{query}")
         results: list[LightdashSearchResult] = []
 
         # Lightdash search returns { results: { dashboards: [], savedCharts: [],
@@ -145,56 +149,68 @@ class LightdashClient:
         raw = data.get("results", data)
 
         for item in raw.get("dashboards", []):
-            results.append(LightdashSearchResult(
-                result_type="dashboard",
-                name=item.get("name", ""),
-                label=item.get("name", ""),
-                description=item.get("description"),
-                url=item.get("url"),
-                object_id=item.get("uuid", item.get("name", "")),
-            ))
+            results.append(
+                LightdashSearchResult(
+                    result_type="dashboard",
+                    name=item.get("name", ""),
+                    label=item.get("name", ""),
+                    description=item.get("description"),
+                    url=item.get("url"),
+                    object_id=item.get("uuid", item.get("name", "")),
+                )
+            )
 
         for item in raw.get("savedCharts", []):
-            results.append(LightdashSearchResult(
-                result_type="chart",
-                name=item.get("name", ""),
-                label=item.get("name", ""),
-                description=item.get("description"),
-                url=item.get("url"),
-                object_id=item.get("uuid", item.get("name", "")),
-            ))
+            results.append(
+                LightdashSearchResult(
+                    result_type="chart",
+                    name=item.get("name", ""),
+                    label=item.get("name", ""),
+                    description=item.get("description"),
+                    url=item.get("url"),
+                    object_id=item.get("uuid", item.get("name", "")),
+                )
+            )
 
         for item in raw.get("fields", []):
-            results.append(LightdashSearchResult(
-                result_type=item.get("fieldType", "metric"),
-                name=item.get("name", ""),
-                label=item.get("label", item.get("name", "")),
-                description=item.get("description"),
-                url=item.get("url"),
-                object_id=item.get("name", ""),
-            ))
+            results.append(
+                LightdashSearchResult(
+                    result_type=item.get("fieldType", "metric"),
+                    name=item.get("name", ""),
+                    label=item.get("label", item.get("name", "")),
+                    description=item.get("description"),
+                    url=item.get("url"),
+                    object_id=item.get("name", ""),
+                )
+            )
 
         for item in raw.get("tables", []):
-            results.append(LightdashSearchResult(
-                result_type="table",
-                name=item.get("name", ""),
-                label=item.get("label", item.get("name", "")),
-                description=item.get("description"),
-                url=item.get("url"),
-                object_id=item.get("name", ""),
-            ))
+            results.append(
+                LightdashSearchResult(
+                    result_type="table",
+                    name=item.get("name", ""),
+                    label=item.get("label", item.get("name", "")),
+                    description=item.get("description"),
+                    url=item.get("url"),
+                    object_id=item.get("name", ""),
+                )
+            )
 
         return results
 
     async def list_explores(self) -> list[dict]:
         data = await self._get(f"/api/v1/projects/{self._project_uuid}/explores")
         return [
-            {"name": e.get("name", ""), "label": e.get("label", ""), "description": e.get("description")}
+            {
+                "name": e.get("name", ""),
+                "label": e.get("label", ""),
+                "description": e.get("description"),
+            }
             for e in data.get("results", [])
         ]
 
-    async def get_explore_detail(self, explore_name: str) -> "ExploreDetail":
-        from .models import ExploreDetail, ExploreField  # avoid circular at top level
+    async def get_explore_detail(self, explore_name: str) -> ExploreDetail:
+
         data = await self._get(f"/api/v1/projects/{self._project_uuid}/explores/{explore_name}")
         results = data.get("results", {})
         tables = results.get("tables", {})
@@ -203,22 +219,28 @@ class LightdashClient:
         fields: list[ExploreField] = []
         for table_name, table in tables.items():
             for field_name, dim in table.get("dimensions", {}).items():
-                fields.append(ExploreField(
-                    field_id=f"{table_name}_{field_name}",
-                    label=dim.get("label", field_name),
-                    description=dim.get("description"),
-                    field_type="dimension",
-                    type=dim.get("type", "string"),
-                ))
+                fields.append(
+                    ExploreField(
+                        field_id=f"{table_name}_{field_name}",
+                        label=dim.get("label", field_name),
+                        description=dim.get("description"),
+                        field_type="dimension",
+                        type=dim.get("type", "string"),
+                    )
+                )
             for field_name, metric in table.get("metrics", {}).items():
-                fields.append(ExploreField(
-                    field_id=f"{table_name}_{field_name}",
-                    label=metric.get("label", field_name),
-                    description=metric.get("description"),
-                    field_type="metric",
-                    type=metric.get("type", "number"),
-                ))
-        return ExploreDetail(explore_name=explore_name, label=label, description=description, fields=fields)
+                fields.append(
+                    ExploreField(
+                        field_id=f"{table_name}_{field_name}",
+                        label=metric.get("label", field_name),
+                        description=metric.get("description"),
+                        field_type="metric",
+                        type=metric.get("type", "number"),
+                    )
+                )
+        return ExploreDetail(
+            explore_name=explore_name, label=label, description=description, fields=fields
+        )
 
     async def run_query(
         self,
@@ -228,8 +250,8 @@ class LightdashClient:
         filters: dict,
         sorts: list[dict],
         limit: int = 100,
-    ) -> "QueryResult":
-        from .models import QueryResult
+    ) -> QueryResult:
+
         body = {
             "exploreName": explore_name,
             "dimensions": dimensions,
@@ -240,22 +262,26 @@ class LightdashClient:
             "tableCalculations": [],
             "additionalMetrics": [],
         }
-        data = await self._post(f"/api/v1/projects/{self._project_uuid}/explores/{explore_name}/runQuery", body)
+        data = await self._post(
+            f"/api/v1/projects/{self._project_uuid}/explores/{explore_name}/runQuery", body
+        )
         results = data.get("results", {})
         rows = results.get("rows", [])
         fields = results.get("fields", {})
         return QueryResult(rows=rows, fields=fields, row_count=len(rows))
 
-    async def list_spaces(self) -> list["LightdashSpace"]:
-        from .models import LightdashSpace
+    async def list_spaces(self) -> list[LightdashSpace]:
+
         data = await self._get(f"/api/v1/projects/{self._project_uuid}/spaces")
         spaces = []
         for s in data.get("results", []):
-            spaces.append(LightdashSpace(
-                space_uuid=s.get("uuid", ""),
-                name=s.get("name", ""),
-                is_private=s.get("isPrivate", False),
-            ))
+            spaces.append(
+                LightdashSpace(
+                    space_uuid=s.get("uuid", ""),
+                    name=s.get("name", ""),
+                    is_private=s.get("isPrivate", False),
+                )
+            )
         return spaces
 
     def build_explore_url(

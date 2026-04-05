@@ -15,7 +15,7 @@ class SkillRegistry:
     _instance: "SkillRegistry | None" = None
 
     def __init__(self) -> None:
-        self._skills: dict[str, "Skill"] = {}
+        self._skills: dict[str, Skill] = {}
 
     @classmethod
     def get_instance(cls) -> "SkillRegistry":

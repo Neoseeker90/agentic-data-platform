@@ -19,19 +19,13 @@ class BusinessQuestionValidator:
         checks: list[ValidationCheck] = []
 
         # Check 1: has_authoritative_source
-        has_primary = any(
-            s.authority == SourceAuthority.PRIMARY for s in context.sources
-        )
+        has_primary = any(s.authority == SourceAuthority.PRIMARY for s in context.sources)
         auth_severity = "error" if plan.identified_metrics else "warning"
         checks.append(
             ValidationCheck(
                 check_name="has_authoritative_source",
                 passed=has_primary,
-                message=(
-                    None
-                    if has_primary
-                    else "No primary-authority source found in context."
-                ),
+                message=(None if has_primary else "No primary-authority source found in context."),
                 severity=auth_severity,
             )
         )
@@ -67,9 +61,7 @@ class BusinessQuestionValidator:
         )
 
         # Overall passed = no error-severity failures
-        overall_passed = all(
-            c.passed or c.severity != "error" for c in checks
-        )
+        overall_passed = all(c.passed or c.severity != "error" for c in checks)
 
         logger.info(
             "Validation for plan_id=%s: passed=%s checks=%d",

@@ -17,10 +17,7 @@ class PromptLoader:
         """
         path = self._prompts_dir / f"{name}.md"
         if not path.exists():
-            raise FileNotFoundError(
-                f"Prompt template '{name}' not found. "
-                f"Expected file at: {path}"
-            )
+            raise FileNotFoundError(f"Prompt template '{name}' not found. Expected file at: {path}")
         return path.read_text(encoding="utf-8")
 
     def get_version_id(self, name: str) -> str:

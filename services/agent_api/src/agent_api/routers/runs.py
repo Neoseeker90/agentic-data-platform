@@ -1,17 +1,16 @@
 import uuid
 from typing import Annotated
 
-from fastapi import APIRouter, Depends, HTTPException, Request, status
+from fastapi import APIRouter, Depends, HTTPException, status
 from sqlalchemy import select
 from sqlalchemy.ext.asyncio import AsyncSession
-
-from contracts.run import RunState, TERMINAL_STATES
 
 from agent_api.db.models import ExecutionResultORM
 from agent_api.db.run_store import RunStore
 from agent_api.dependencies import CurrentUser, get_db_session, get_run_store
 from agent_api.schemas.requests import ApprovalRequest
 from agent_api.schemas.responses import RunStatusResponse
+from contracts.run import TERMINAL_STATES, RunState
 
 router = APIRouter()
 

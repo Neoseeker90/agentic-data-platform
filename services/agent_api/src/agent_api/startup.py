@@ -40,8 +40,8 @@ def _parse_bedrock_token(token: str) -> tuple[str, str]:
         pass
     return "", ""
 
-from agent_api.config import Settings
 
+from agent_api.config import Settings  # noqa: E402
 
 # ---------------------------------------------------------------------------
 # OpenAI → Anthropic response adapter
@@ -49,6 +49,7 @@ from agent_api.config import Settings
 # Skills and the router use client.messages.create() and read response.content[0].text.
 # This thin adapter makes an OpenAI AsyncClient expose that same interface so no
 # skill or router code needs to change.
+
 
 class _OpenAIContent:
     def __init__(self, text: str) -> None:
@@ -61,10 +62,14 @@ class _OpenAIAdaptedResponse:
         self.content = [_OpenAIContent(text)]
         # Expose usage in Anthropic field names for cost recording
         u = oai_response.usage
-        self.usage = type("Usage", (), {
-            "input_tokens": u.prompt_tokens,
-            "output_tokens": u.completion_tokens,
-        })()
+        self.usage = type(
+            "Usage",
+            (),
+            {
+                "input_tokens": u.prompt_tokens,
+                "output_tokens": u.completion_tokens,
+            },
+        )()
 
 
 class _OpenAIMessagesAPI:
@@ -98,13 +103,13 @@ class OpenAIClientAdapter:
         self.messages = _OpenAIMessagesAPI(openai_client)
 
 
-from agent_api.db.engine import get_session_factory
-from agent_api.db.run_store import RunStore
-from observability.run_auditor import RunAuditor
-from router.classifier import Router
-from router.config import RouterConfig
-from router.prompt import PromptLoader as RouterPromptLoader
-from skill_sdk.registry import SkillRegistry
+from agent_api.db.engine import get_session_factory  # noqa: E402
+from agent_api.db.run_store import RunStore  # noqa: E402
+from observability.run_auditor import RunAuditor  # noqa: E402
+from router.classifier import Router  # noqa: E402
+from router.config import RouterConfig  # noqa: E402
+from router.prompt import PromptLoader as RouterPromptLoader  # noqa: E402
+from skill_sdk.registry import SkillRegistry  # noqa: E402
 
 logger = logging.getLogger(__name__)
 
@@ -122,7 +127,7 @@ class AppContainer:
         self._orchestrator = None  # RunOrchestrator — imported lazily to avoid circular deps
 
     @classmethod
-    def create(cls, settings: Settings) -> "AppContainer":
+    def create(cls, settings: Settings) -> AppContainer:
         container = cls(settings)
         container._build()
         return container
@@ -163,9 +168,7 @@ class AppContainer:
             # It's mutually exclusive with aws_access_key / aws_secret_key.
             # Ensure it's set in the environment from our settings if not already there.
             if settings.aws_bearer_token_bedrock:
-                os.environ.setdefault(
-                    "AWS_BEARER_TOKEN_BEDROCK", settings.aws_bearer_token_bedrock
-                )
+                os.environ.setdefault("AWS_BEARER_TOKEN_BEDROCK", settings.aws_bearer_token_bedrock)
             return anthropic.AsyncAnthropicBedrock(aws_region=settings.aws_region)
         if settings.openai_api_key:
             try:
@@ -193,7 +196,9 @@ class AppContainer:
         router_model = settings.resolve_model(settings.router_model)
         logger.info(
             "Model IDs — router: %s | planning: %s | execution: %s",
-            router_model, planning_model, execution_model,
+            router_model,
+            planning_model,
+            execution_model,
         )
 
         # Adapters
@@ -225,8 +230,7 @@ class AppContainer:
 
         # Router
         router_prompts_dir = (
-            Path(__file__).parent.parent.parent.parent.parent
-            / "packages" / "router" / "prompts"
+            Path(__file__).parent.parent.parent.parent.parent / "packages" / "router" / "prompts"
         )
         router_prompt_loader = RouterPromptLoader(prompts_dir=router_prompts_dir)
         self._router = Router(
@@ -242,6 +246,7 @@ class AppContainer:
 
         # Orchestrator
         from skill_sdk.lifecycle import RunOrchestrator  # noqa: PLC0415
+
         self._orchestrator = RunOrchestrator(
             registry=registry,
             run_store=run_store,
@@ -303,13 +308,10 @@ class AppContainer:
         execution_model: str,
         dbt_project_path: str = "",
     ) -> None:
-        _pkg_root = (
-            Path(__file__).parent.parent.parent.parent.parent / "packages"
-        )
-        from router.prompt import PromptLoader  # noqa: PLC0415
-
+        _pkg_root = Path(__file__).parent.parent.parent.parent.parent / "packages"
         # answer_business_question
         from answer_business_question.skill import AnswerBusinessQuestionSkill  # noqa: PLC0415
+        from router.prompt import PromptLoader  # noqa: PLC0415
 
         abq_prompts = _pkg_root / "skills" / "answer_business_question" / "prompts"
         registry.register(
@@ -325,7 +327,9 @@ class AppContainer:
         )
 
         # discover_metrics_and_dashboards
-        from discover_metrics_and_dashboards.skill import DiscoverMetricsAndDashboardsSkill  # noqa: PLC0415
+        from discover_metrics_and_dashboards.skill import (
+            DiscoverMetricsAndDashboardsSkill,  # noqa: PLC0415
+        )
 
         dmd_prompts = _pkg_root / "skills" / "discover_metrics_and_dashboards" / "prompts"
         registry.register(

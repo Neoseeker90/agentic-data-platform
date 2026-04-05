@@ -86,9 +86,7 @@ class RunStore:
             await session.refresh(orm)
             return self._orm_to_contract(orm)
 
-    async def list_for_user(
-        self, user_id: str, limit: int = 20, offset: int = 0
-    ) -> list[Run]:
+    async def list_for_user(self, user_id: str, limit: int = 20, offset: int = 0) -> list[Run]:
         async with self._session_factory() as session:
             result = await session.execute(
                 select(RunORM)

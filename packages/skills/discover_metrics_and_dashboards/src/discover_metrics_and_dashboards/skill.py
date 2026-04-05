@@ -40,12 +40,14 @@ class DiscoverMetricsAndDashboardsSkill(Skill):
         planning_model: str | None = None,
         execution_model: str | None = None,
     ) -> None:
-        self._planner = DiscoveryPlanner(anthropic_client, prompt_loader, cost_recorder, planning_model=planning_model)
-        self._context_builder = DiscoveryContextBuilder(
-            lightdash_search, dbt_reader, docs_searcher
+        self._planner = DiscoveryPlanner(
+            anthropic_client, prompt_loader, cost_recorder, planning_model=planning_model
         )
+        self._context_builder = DiscoveryContextBuilder(lightdash_search, dbt_reader, docs_searcher)
         self._validator = DiscoveryValidator()
-        self._executor = DiscoveryExecutor(anthropic_client, prompt_loader, cost_recorder, execution_model=execution_model)
+        self._executor = DiscoveryExecutor(
+            anthropic_client, prompt_loader, cost_recorder, execution_model=execution_model
+        )
         self._formatter = DiscoveryFormatter()
 
     async def plan(

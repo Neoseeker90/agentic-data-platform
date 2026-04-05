@@ -2,6 +2,7 @@
 Seed business documentation into the business_docs table.
 Usage: uv run python scripts/seed_docs.py --docs-dir path/to/docs/
 """
+
 import argparse
 import asyncio
 import os

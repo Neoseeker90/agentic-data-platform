@@ -22,7 +22,9 @@ def _orm_to_case(row: EvaluationCaseORM) -> EvaluationCase:
         try:
             failure_reason = FeedbackFailureReason(row.feedback_failure_reason)
         except ValueError:
-            logger.warning("Unknown failure_reason %r in case %s", row.feedback_failure_reason, row.case_id)
+            logger.warning(
+                "Unknown failure_reason %r in case %s", row.feedback_failure_reason, row.case_id
+            )
 
     return EvaluationCase(
         case_id=row.case_id,
@@ -54,9 +56,7 @@ def _case_to_orm(case: EvaluationCase) -> EvaluationCaseORM:
         observed_response=case.observed_response,
         feedback_score=case.feedback_score,
         feedback_failure_reason=(
-            case.feedback_failure_reason.value
-            if case.feedback_failure_reason is not None
-            else None
+            case.feedback_failure_reason.value if case.feedback_failure_reason is not None else None
         ),
         human_label=case.human_label,
         dataset_tags=list(case.dataset_tags),
@@ -73,7 +73,7 @@ class CaseStore:
 
     async def save(self, case: EvaluationCase) -> EvaluationCase:
         async with self._session_factory() as session:
-            session: AsyncSession
+            session: AsyncSession  # type: ignore
             row = _case_to_orm(case)
             session.add(row)
             await session.commit()
@@ -82,7 +82,7 @@ class CaseStore:
 
     async def get(self, case_id: UUID) -> EvaluationCase | None:
         async with self._session_factory() as session:
-            session: AsyncSession
+            session: AsyncSession  # type: ignore
             result = await session.execute(
                 select(EvaluationCaseORM).where(EvaluationCaseORM.case_id == case_id)
             )
@@ -99,16 +99,12 @@ class CaseStore:
         offset: int = 0,
     ) -> list[EvaluationCase]:
         async with self._session_factory() as session:
-            session: AsyncSession
+            session: AsyncSession  # type: ignore
             query = select(EvaluationCaseORM)
 
             if tags:
                 for tag in tags:
-                    query = query.where(
-                        EvaluationCaseORM.dataset_tags.op("@>")(
-                            cast([tag], JSONB)
-                        )
-                    )
+                    query = query.where(EvaluationCaseORM.dataset_tags.op("@>")(cast([tag], JSONB)))
 
             if status is not None:
                 query = query.where(EvaluationCaseORM.status == status)
@@ -119,7 +115,7 @@ class CaseStore:
 
     async def update_status(self, case_id: UUID, status: str) -> None:
         async with self._session_factory() as session:
-            session: AsyncSession
+            session: AsyncSession  # type: ignore
             result = await session.execute(
                 select(EvaluationCaseORM).where(EvaluationCaseORM.case_id == case_id)
             )
@@ -132,8 +128,6 @@ class CaseStore:
 
     async def count(self) -> int:
         async with self._session_factory() as session:
-            session: AsyncSession
-            result = await session.execute(
-                select(func.count()).select_from(EvaluationCaseORM)
-            )
+            session: AsyncSession  # type: ignore
+            result = await session.execute(select(func.count()).select_from(EvaluationCaseORM))
             return result.scalar_one()

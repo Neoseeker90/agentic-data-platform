@@ -5,7 +5,6 @@ from unittest.mock import AsyncMock, MagicMock
 
 import pytest
 
-from contracts.context_pack import ContextSource, SourceAuthority, SourceType
 from contracts.run import Run
 
 
@@ -152,7 +151,7 @@ async def test_full_pipeline_happy_path() -> None:
 async def test_full_pipeline_metric_not_found() -> None:
     from explain_metric_definition.skill import ExplainMetricDefinitionSkill
 
-    plan_payload = {
+    plan_payload = {  # type: ignore
         "metric_name": "unknown metric xyz",
         "normalized_metric_name": "unknown_metric_xyz",
         "related_metric_names": [],

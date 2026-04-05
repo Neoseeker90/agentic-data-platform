@@ -1,0 +1,22 @@
+[build-system]
+requires = ["hatchling"]
+build-backend = "hatchling.build"
+
+[project]
+name = "observability"
+version = "0.1.0"
+requires-python = ">=3.12"
+dependencies = [
+  "contracts",
+  "anthropic>=0.28.0",
+  "structlog>=24.0.0",
+  "aioboto3>=13.0.0",
+  "agent_api",
+]
+
+[tool.hatch.build.targets.wheel]
+packages = ["src/observability"]
+
+[tool.pytest.ini_options]
+asyncio_mode = "auto"
+testpaths = ["tests"]

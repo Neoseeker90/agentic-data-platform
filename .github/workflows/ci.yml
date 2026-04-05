@@ -1,0 +1,81 @@
+name: CI
+
+on:
+  push:
+    branches: [main, develop]
+  pull_request:
+    branches: [main, develop]
+
+jobs:
+  lint:
+    name: Lint
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: astral-sh/setup-uv@v3
+        with:
+          version: "latest"
+      - run: uv sync --all-packages
+      - run: uv run ruff check .
+      - run: uv run ruff format --check .
+
+  typecheck:
+    name: Type check
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: astral-sh/setup-uv@v3
+        with:
+          version: "latest"
+      - run: uv sync --all-packages
+      - run: uv run mypy packages/ services/
+
+  test:
+    name: Unit tests
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: astral-sh/setup-uv@v3
+        with:
+          version: "latest"
+      - run: uv sync --all-packages
+      - run: uv run pytest packages/ services/ -v --cov --cov-report=xml -m "not integration"
+      - uses: codecov/codecov-action@v4
+        with:
+          files: ./coverage.xml
+        if: always()
+
+  integration-test:
+    name: Integration tests
+    runs-on: ubuntu-latest
+    services:
+      postgres:
+        image: postgres:16
+        env:
+          POSTGRES_DB: agentdb
+          POSTGRES_USER: agent
+          POSTGRES_PASSWORD: ${{ secrets.CI_POSTGRES_PASSWORD }}
+        ports:
+          - 5432:5432
+        options: >-
+          --health-cmd pg_isready
+          --health-interval 5s
+          --health-timeout 5s
+          --health-retries 5
+    steps:
+      - uses: actions/checkout@v4
+      - uses: astral-sh/setup-uv@v3
+        with:
+          version: "latest"
+      - run: uv sync --all-packages
+      - name: Run migrations
+        env:
+          PGPASSWORD: ${{ secrets.CI_POSTGRES_PASSWORD }}
+        run: |
+          for f in infra/postgres/migrations/*.sql; do
+            psql -h localhost -U agent -d agentdb -f "$f"
+          done
+      - name: Run integration tests
+        env:
+          DATABASE_URL: postgresql+asyncpg://agent:${{ secrets.CI_POSTGRES_PASSWORD }}@localhost:5432/agentdb
+        run: uv run pytest tests/integration/ -v -m integration

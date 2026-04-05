@@ -1,0 +1,22 @@
+[build-system]
+requires = ["hatchling"]
+build-backend = "hatchling.build"
+
+[project]
+name = "explain_metric_definition"
+version = "0.1.0"
+requires-python = ">=3.12"
+dependencies = [
+  "contracts",
+  "skill_sdk",
+  "lightdash_adapter",
+  "dbt_adapter",
+  "business_docs_adapter",
+]
+
+[tool.hatch.build.targets.wheel]
+packages = ["src/explain_metric_definition"]
+
+[tool.pytest.ini_options]
+asyncio_mode = "auto"
+testpaths = ["tests"]

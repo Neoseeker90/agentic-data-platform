@@ -1,0 +1,21 @@
+[build-system]
+requires = ["hatchling"]
+build-backend = "hatchling.build"
+
+[project]
+name = "feedback"
+version = "0.1.0"
+requires-python = ">=3.12"
+dependencies = [
+  "contracts",
+  "sqlalchemy[asyncio]>=2.0.0",
+  "asyncpg>=0.29.0",
+  "agent_api",
+]
+
+[tool.hatch.build.targets.wheel]
+packages = ["src/feedback"]
+
+[tool.pytest.ini_options]
+asyncio_mode = "auto"
+testpaths = ["tests"]

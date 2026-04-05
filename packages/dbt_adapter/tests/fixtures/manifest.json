@@ -1,0 +1,79 @@
+{
+  "metadata": {
+    "dbt_schema_version": "https://schemas.getdbt.com/dbt/manifest/v9/manifest.json",
+    "dbt_version": "1.7.0",
+    "generated_at": "2024-01-01T00:00:00.000000Z",
+    "invocation_id": "test-invocation-id"
+  },
+  "nodes": {
+    "model.my_project.fct_revenue": {
+      "unique_id": "model.my_project.fct_revenue",
+      "name": "fct_revenue",
+      "description": "Revenue fact table",
+      "resource_type": "model",
+      "schema": "analytics",
+      "tags": ["finance"],
+      "columns": {
+        "revenue_amount": {
+          "name": "revenue_amount",
+          "description": "Gross revenue in USD",
+          "data_type": "numeric"
+        },
+        "order_id": {
+          "name": "order_id",
+          "description": "Unique order identifier",
+          "data_type": "varchar"
+        }
+      },
+      "depends_on": {
+        "nodes": []
+      },
+      "raw_code": "SELECT * FROM {{ ref('stg_orders') }}"
+    },
+    "model.my_project.dim_customers": {
+      "unique_id": "model.my_project.dim_customers",
+      "name": "dim_customers",
+      "description": "Customer dimension table",
+      "resource_type": "model",
+      "schema": "analytics",
+      "tags": ["customers"],
+      "columns": {
+        "customer_id": {
+          "name": "customer_id",
+          "description": "Unique customer identifier",
+          "data_type": "varchar"
+        }
+      },
+      "depends_on": {
+        "nodes": []
+      },
+      "raw_code": "SELECT * FROM {{ ref('stg_customers') }}"
+    }
+  },
+  "metrics": {
+    "metric.my_project.net_revenue": {
+      "unique_id": "metric.my_project.net_revenue",
+      "name": "net_revenue",
+      "label": "Net Revenue",
+      "description": "Revenue minus returns and refunds",
+      "type": "simple",
+      "expression": "sum(revenue_amount) - sum(returns_amount)",
+      "depends_on": {
+        "nodes": ["model.my_project.fct_revenue"]
+      }
+    }
+  },
+  "exposures": {
+    "exposure.my_project.revenue_dashboard": {
+      "unique_id": "exposure.my_project.revenue_dashboard",
+      "name": "revenue_dashboard",
+      "description": "Main revenue dashboard",
+      "type": "dashboard",
+      "depends_on": {
+        "nodes": ["model.my_project.fct_revenue"]
+      },
+      "url": "https://lightdash.example.com/dashboards/abc"
+    }
+  },
+  "sources": {}
+}

@@ -1,0 +1,724 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Agentic Data Platform — Chat</title>
+  <style>
+    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+    body {
+      font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+      background: #0f1117;
+      color: #e2e8f0;
+      height: 100vh;
+      display: flex;
+      flex-direction: column;
+    }
+
+    /* ── Header ── */
+    header {
+      padding: 14px 24px;
+      border-bottom: 1px solid #1e2535;
+      display: flex;
+      align-items: center;
+      gap: 12px;
+      background: #141820;
+    }
+    header .logo {
+      width: 28px; height: 28px;
+      background: linear-gradient(135deg, #6366f1, #8b5cf6);
+      border-radius: 8px;
+      display: flex; align-items: center; justify-content: center;
+      font-size: 14px;
+    }
+    header h1 { font-size: 15px; font-weight: 600; color: #f1f5f9; }
+    header .badge {
+      margin-left: auto;
+      font-size: 11px;
+      padding: 2px 8px;
+      border-radius: 999px;
+      background: #1a2540;
+      color: #64748b;
+      border: 1px solid #1e2535;
+    }
+    header .badge.connected { color: #22c55e; border-color: #166534; background: #052e16; }
+
+    /* ── Config bar ── */
+    #config-bar {
+      padding: 8px 24px;
+      background: #141820;
+      border-bottom: 1px solid #1e2535;
+      display: flex;
+      gap: 12px;
+      align-items: center;
+      font-size: 12px;
+      color: #64748b;
+    }
+    #config-bar label { white-space: nowrap; }
+    #config-bar input {
+      background: #0f1117;
+      border: 1px solid #1e2535;
+      border-radius: 6px;
+      color: #e2e8f0;
+      padding: 4px 8px;
+      font-size: 12px;
+      width: 180px;
+    }
+    #config-bar input:focus { outline: none; border-color: #6366f1; }
+
+    /* ── Messages ── */
+    #messages {
+      flex: 1;
+      overflow-y: auto;
+      padding: 24px;
+      display: flex;
+      flex-direction: column;
+      gap: 20px;
+    }
+
+    .msg { display: flex; gap: 12px; max-width: 820px; }
+    .msg.user { align-self: flex-end; flex-direction: row-reverse; }
+    .msg.assistant { align-self: flex-start; }
+
+    .avatar {
+      width: 32px; height: 32px; border-radius: 50%;
+      flex-shrink: 0;
+      display: flex; align-items: center; justify-content: center;
+      font-size: 13px; font-weight: 700;
+    }
+    .msg.user .avatar { background: #312e81; color: #a5b4fc; }
+    .msg.assistant .avatar { background: #1e2535; color: #94a3b8; }
+
+    .bubble {
+      padding: 12px 16px;
+      border-radius: 12px;
+      font-size: 14px;
+      line-height: 1.6;
+      max-width: 680px;
+      white-space: pre-wrap;
+      word-break: break-word;
+    }
+    .msg.user .bubble {
+      background: #312e81;
+      color: #e0e7ff;
+      border-bottom-right-radius: 4px;
+    }
+    .msg.assistant .bubble {
+      background: #1a2030;
+      border: 1px solid #1e2535;
+      color: #e2e8f0;
+      border-bottom-left-radius: 4px;
+    }
+    .msg.assistant .bubble.thinking {
+      color: #64748b;
+      font-style: italic;
+    }
+    .msg.assistant .bubble.error {
+      border-color: #7f1d1d;
+      background: #1a0a0a;
+      color: #fca5a5;
+    }
+    .msg.assistant .bubble.clarification {
+      border-color: #78350f;
+      background: #1c1208;
+      color: #fcd34d;
+    }
+
+    /* skill badge */
+    .skill-badge {
+      display: inline-block;
+      font-size: 10px;
+      padding: 2px 7px;
+      border-radius: 999px;
+      margin-bottom: 6px;
+      background: #1e2d1e;
+      color: #4ade80;
+      border: 1px solid #166534;
+    }
+
+    /* feedback buttons */
+    .feedback-row {
+      display: flex;
+      gap: 6px;
+      margin-top: 8px;
+    }
+    .feedback-btn {
+      background: none;
+      border: 1px solid #1e2535;
+      border-radius: 6px;
+      color: #64748b;
+      cursor: pointer;
+      font-size: 13px;
+      padding: 3px 8px;
+      transition: all 0.15s;
+    }
+    .feedback-btn:hover { border-color: #6366f1; color: #a5b4fc; }
+    .feedback-btn.active { border-color: #22c55e; color: #22c55e; background: #052e16; }
+    .feedback-btn.active.bad { border-color: #ef4444; color: #ef4444; background: #1a0a0a; }
+
+    /* run metadata */
+    .run-meta {
+      font-size: 10px;
+      color: #334155;
+      margin-top: 4px;
+      display: flex;
+      gap: 8px;
+    }
+
+    /* thinking dots */
+    .dots::after {
+      content: '';
+      animation: dots 1.2s steps(4, end) infinite;
+    }
+    @keyframes dots {
+      0%  { content: ''; }
+      25% { content: '.'; }
+      50% { content: '..'; }
+      75% { content: '...'; }
+    }
+
+    /* ── Input bar ── */
+    #input-bar {
+      padding: 16px 24px;
+      border-top: 1px solid #1e2535;
+      background: #141820;
+      display: flex;
+      gap: 10px;
+      align-items: flex-end;
+    }
+    #input-bar textarea {
+      flex: 1;
+      background: #0f1117;
+      border: 1px solid #1e2535;
+      border-radius: 10px;
+      color: #e2e8f0;
+      font-size: 14px;
+      line-height: 1.5;
+      padding: 10px 14px;
+      resize: none;
+      min-height: 44px;
+      max-height: 160px;
+      font-family: inherit;
+      transition: border-color 0.15s;
+    }
+    #input-bar textarea:focus { outline: none; border-color: #6366f1; }
+    #input-bar textarea::placeholder { color: #334155; }
+    #send-btn {
+      width: 44px; height: 44px;
+      background: #6366f1;
+      border: none;
+      border-radius: 10px;
+      color: #fff;
+      cursor: pointer;
+      font-size: 18px;
+      display: flex; align-items: center; justify-content: center;
+      flex-shrink: 0;
+      transition: background 0.15s, opacity 0.15s;
+    }
+    #send-btn:hover { background: #4f46e5; }
+    #send-btn:disabled { opacity: 0.35; cursor: not-allowed; }
+
+    /* clarification input */
+    #clarification-bar {
+      display: none;
+      padding: 12px 24px;
+      background: #1c1208;
+      border-top: 1px solid #78350f;
+      gap: 10px;
+      align-items: center;
+      font-size: 13px;
+      color: #fcd34d;
+    }
+    #clarification-bar.visible { display: flex; }
+    #clarification-bar input {
+      flex: 1;
+      background: #0f1117;
+      border: 1px solid #78350f;
+      border-radius: 8px;
+      color: #e2e8f0;
+      font-size: 13px;
+      padding: 8px 12px;
+    }
+    #clarification-bar input:focus { outline: none; border-color: #f59e0b; }
+    #clarification-bar button {
+      background: #78350f;
+      border: none;
+      border-radius: 8px;
+      color: #fcd34d;
+      cursor: pointer;
+      font-size: 12px;
+      padding: 8px 14px;
+      white-space: nowrap;
+    }
+    #clarification-bar button:hover { background: #92400e; }
+
+    /* scrollbar */
+    #messages::-webkit-scrollbar { width: 4px; }
+    #messages::-webkit-scrollbar-track { background: transparent; }
+    #messages::-webkit-scrollbar-thumb { background: #1e2535; border-radius: 4px; }
+  </style>
+</head>
+<body>
+
+<header>
+  <div class="logo">⬡</div>
+  <h1>Agentic Data Platform</h1>
+  <span class="badge" id="status-badge">connecting...</span>
+</header>
+
+<div id="config-bar">
+  <label>API</label>
+  <input id="api-url" value="http://localhost:8000" />
+  <label style="margin-left:8px">User ID</label>
+  <input id="user-id" value="dev-user" style="width:120px" />
+</div>
+
+<div id="messages"></div>
+
+<div id="clarification-bar">
+  <span>⚠ Needs clarification:</span>
+  <input id="clarification-input" placeholder="Type your clarification..." />
+  <button id="clarification-send">Send</button>
+</div>
+
+<div id="input-bar">
+  <textarea id="prompt" rows="1" placeholder="Ask a question about your data..."></textarea>
+  <button id="send-btn">↑</button>
+</div>
+
+<script>
+  const POLL_INTERVAL_MS = 1500;
+  const POLL_TIMEOUT_MS  = 120_000;
+
+  // ── Minimal markdown renderer ──────────────────────────────────────────────
+  function renderMarkdown(text) {
+    if (!text) return document.createTextNode('');
+    const container = document.createElement('div');
+    container.style.lineHeight = '1.6';
+
+    // Process block by block (double-newline = paragraph break)
+    const blocks = text.split(/\n\n+/);
+
+    blocks.forEach(block => {
+      block = block.trim();
+      if (!block) return;
+
+      // Markdown table
+      if (block.includes('|') && block.split('\n').some(l => /^\s*\|/.test(l))) {
+        const lines = block.split('\n').filter(l => l.trim() && !/^[\s|:-]+$/.test(l));
+        if (lines.length >= 1) {
+          const table = document.createElement('table');
+          table.style.cssText = 'border-collapse:collapse;width:100%;font-size:12px;margin:6px 0';
+          lines.forEach((line, i) => {
+            const cells = line.split('|').map(c => c.trim()).filter((c, idx, arr) => idx > 0 && idx < arr.length - 1);
+            if (!cells.length) return;
+            const tr = document.createElement('tr');
+            cells.forEach(cell => {
+              const td = document.createElement(i === 0 ? 'th' : 'td');
+              td.style.cssText = 'padding:3px 8px;border:1px solid #1e2535;text-align:left;' + (i === 0 ? 'background:#1a2030;' : '');
+              td.textContent = cell;
+              tr.appendChild(td);
+            });
+            table.appendChild(tr);
+          });
+          container.appendChild(table);
+          return;
+        }
+      }
+
+      // Heading
+      const headingMatch = block.match(/^(#{1,3})\s+(.+)/);
+      if (headingMatch) {
+        const el = document.createElement('h' + headingMatch[1].length);
+        el.style.cssText = 'margin:6px 0 2px;font-size:' + [null,'1em','0.95em','0.9em'][headingMatch[1].length];
+        el.textContent = headingMatch[2];
+        container.appendChild(el);
+        return;
+      }
+
+      // List items
+      if (/^[-*]\s|^\d+\.\s/.test(block)) {
+        const ul = document.createElement('ul');
+        ul.style.cssText = 'margin:4px 0;padding-left:20px';
+        block.split('\n').forEach(line => {
+          const m = line.match(/^[-*\d.]+\s+(.*)/);
+          if (m) {
+            const li = document.createElement('li');
+            li.appendChild(inlineMarkdown(m[1]));
+            ul.appendChild(li);
+          }
+        });
+        container.appendChild(ul);
+        return;
+      }
+
+      // Blockquote
+      if (block.startsWith('>')) {
+        const bq = document.createElement('blockquote');
+        bq.style.cssText = 'border-left:3px solid #334155;margin:4px 0;padding:4px 10px;color:#94a3b8';
+        bq.appendChild(inlineMarkdown(block.replace(/^>\s*/gm, '')));
+        container.appendChild(bq);
+        return;
+      }
+
+      // Normal paragraph
+      const p = document.createElement('p');
+      p.style.cssText = 'margin:3px 0';
+      p.appendChild(inlineMarkdown(block));
+      container.appendChild(p);
+    });
+
+    return container;
+  }
+
+  function inlineMarkdown(text) {
+    // Returns a DocumentFragment with inline formatting applied
+    const frag = document.createDocumentFragment();
+    // Split on links [text](url), **bold**, `code`, _italic_
+    const parts = text.split(/(\[([^\]]+)\]\(([^)]+)\)|\*\*([^*]+)\*\*|`([^`]+)`|_([^_]+)_)/);
+    parts.forEach(part => {
+      if (!part) return;
+      const linkMatch = part.match(/^\[([^\]]+)\]\(([^)]+)\)$/);
+      if (linkMatch) {
+        const a = document.createElement('a');
+        a.href = linkMatch[2];
+        a.target = '_blank';
+        a.rel = 'noopener noreferrer';
+        a.textContent = linkMatch[1];
+        a.style.cssText = 'color:#818cf8;text-decoration:underline';
+        frag.appendChild(a);
+        return;
+      }
+      const boldMatch = part.match(/^\*\*([^*]+)\*\*$/);
+      if (boldMatch) { const b = document.createElement('strong'); b.textContent = boldMatch[1]; frag.appendChild(b); return; }
+      const codeMatch = part.match(/^`([^`]+)`$/);
+      if (codeMatch) {
+        const c = document.createElement('code');
+        c.textContent = codeMatch[1];
+        c.style.cssText = 'background:#1a2030;padding:1px 4px;border-radius:3px;font-size:0.9em;font-family:monospace';
+        frag.appendChild(c);
+        return;
+      }
+      const italicMatch = part.match(/^_([^_]+)_$/);
+      if (italicMatch) { const em = document.createElement('em'); em.style.color = '#94a3b8'; em.textContent = italicMatch[1]; frag.appendChild(em); return; }
+      frag.appendChild(document.createTextNode(part));
+    });
+    return frag;
+  }
+
+  const messagesEl     = document.getElementById('messages');
+  const promptEl       = document.getElementById('prompt');
+  const sendBtn        = document.getElementById('send-btn');
+  const statusBadge    = document.getElementById('status-badge');
+  const clarBar        = document.getElementById('clarification-bar');
+  const clarInput      = document.getElementById('clarification-input');
+  const clarSendBtn    = document.getElementById('clarification-send');
+
+  let pendingRunId = null;  // run waiting for clarification
+  let currentSessionId = null; // persisted across all messages in this tab
+
+  // ── Helpers ──────────────────────────────────────────────────────────────
+
+  const apiBase  = () => document.getElementById('api-url').value.replace(/\/$/, '');
+  const userId   = () => document.getElementById('user-id').value || 'dev-user';
+
+  function headers() {
+    return {
+      'Content-Type': 'application/json',
+      'X-User-Id': userId(),
+    };
+  }
+
+  function scrollBottom() {
+    messagesEl.scrollTop = messagesEl.scrollHeight;
+  }
+
+  function addMessage(role, content, opts = {}) {
+    const wrap = document.createElement('div');
+    wrap.className = `msg ${role}`;
+
+    const avatar = document.createElement('div');
+    avatar.className = 'avatar';
+    avatar.textContent = role === 'user' ? 'U' : '⬡';
+
+    const bubble = document.createElement('div');
+    bubble.className = `bubble ${opts.cls || ''}`;
+
+    const inner = document.createElement('div');
+
+    if (opts.skillName) {
+      const badge = document.createElement('div');
+      badge.className = 'skill-badge';
+      badge.textContent = opts.skillName;
+      inner.appendChild(badge);
+    }
+
+    const text = document.createElement('div');
+    text.className = opts.dotAnim ? 'dots' : '';
+    text.textContent = content;
+    inner.appendChild(text);
+
+    if (opts.runId) {
+      const meta = document.createElement('div');
+      meta.className = 'run-meta';
+      meta.textContent = `run: ${opts.runId}`;
+      inner.appendChild(meta);
+    }
+
+    bubble.appendChild(inner);
+
+    if (opts.withFeedback && opts.runId) {
+      bubble.appendChild(buildFeedbackRow(opts.runId));
+    }
+
+    wrap.appendChild(avatar);
+    wrap.appendChild(bubble);
+    messagesEl.appendChild(wrap);
+    scrollBottom();
+    return { wrap, bubble, text, inner };
+  }
+
+  function buildFeedbackRow(runId) {
+    const row = document.createElement('div');
+    row.className = 'feedback-row';
+
+    const thumbUp = document.createElement('button');
+    thumbUp.className = 'feedback-btn';
+    thumbUp.textContent = '👍';
+    thumbUp.title = 'Helpful';
+
+    const thumbDown = document.createElement('button');
+    thumbDown.className = 'feedback-btn';
+    thumbDown.textContent = '👎';
+    thumbDown.title = 'Not helpful';
+
+    async function sendFeedback(helpful) {
+      try {
+        await fetch(`${apiBase()}/feedback/${runId}`, {
+          method: 'POST',
+          headers: headers(),
+          body: JSON.stringify({ helpful }),
+        });
+        thumbUp.classList.toggle('active', helpful === true);
+        thumbDown.classList.toggle('active', helpful === false);
+        thumbDown.classList.toggle('bad', helpful === false);
+      } catch { /* silent */ }
+    }
+
+    thumbUp.addEventListener('click', () => sendFeedback(true));
+    thumbDown.addEventListener('click', () => sendFeedback(false));
+    row.appendChild(thumbUp);
+    row.appendChild(thumbDown);
+    return row;
+  }
+
+  // ── Health check ─────────────────────────────────────────────────────────
+
+  async function checkHealth() {
+    try {
+      const r = await fetch(`${apiBase()}/health`);
+      if (r.ok) {
+        statusBadge.textContent = 'connected';
+        statusBadge.classList.add('connected');
+      } else {
+        statusBadge.textContent = 'API error';
+        statusBadge.classList.remove('connected');
+      }
+    } catch {
+      statusBadge.textContent = 'offline';
+      statusBadge.classList.remove('connected');
+    }
+  }
+
+  checkHealth();
+  setInterval(checkHealth, 15_000);
+
+  // ── Polling ───────────────────────────────────────────────────────────────
+
+  async function pollUntilDone(runId, thinkingEl) {
+    const deadline = Date.now() + POLL_TIMEOUT_MS;
+
+    while (Date.now() < deadline) {
+      await new Promise(r => setTimeout(r, POLL_INTERVAL_MS));
+
+      let data;
+      try {
+        const r = await fetch(`${apiBase()}/runs/${runId}`, { headers: headers() });
+        data = await r.json();
+      } catch (e) {
+        thinkingEl.text.textContent = `Network error: ${e.message}`;
+        thinkingEl.bubble.classList.add('error');
+        thinkingEl.text.classList.remove('dots');
+        return;
+      }
+
+      const { state, selected_skill, response, error_message, clarification_question } = data;
+
+      if (state === 'routed' && selected_skill) {
+        thinkingEl.text.textContent = `Running skill`;
+        if (!thinkingEl.inner.querySelector('.skill-badge')) {
+          const badge = document.createElement('div');
+          badge.className = 'skill-badge';
+          badge.textContent = selected_skill;
+          thinkingEl.inner.insertBefore(badge, thinkingEl.text);
+        }
+      }
+
+      if (state === 'succeeded') {
+        thinkingEl.bubble.classList.remove('thinking');
+        thinkingEl.text.classList.remove('dots');
+        thinkingEl.text.innerHTML = '';
+        thinkingEl.text.appendChild(renderMarkdown(response || '(no response)'));
+        if (selected_skill && !thinkingEl.inner.querySelector('.skill-badge')) {
+          const badge = document.createElement('div');
+          badge.className = 'skill-badge';
+          badge.textContent = selected_skill;
+          thinkingEl.inner.insertBefore(badge, thinkingEl.text);
+        }
+        thinkingEl.bubble.appendChild(buildFeedbackRow(runId));
+        const meta = document.createElement('div');
+        meta.className = 'run-meta';
+        meta.textContent = `run: ${runId}`;
+        thinkingEl.bubble.appendChild(meta);
+        scrollBottom();
+        return;
+      }
+
+      if (state === 'failed') {
+        thinkingEl.bubble.classList.add('error');
+        thinkingEl.text.classList.remove('dots');
+        thinkingEl.text.textContent = `Failed: ${error_message || 'unknown error'}`;
+        scrollBottom();
+        return;
+      }
+
+      if (state === 'created' && (clarification_question || error_message)) {
+        // parked awaiting clarification
+        thinkingEl.bubble.classList.add('clarification');
+        thinkingEl.bubble.classList.remove('thinking');
+        thinkingEl.text.classList.remove('dots');
+        const question = clarification_question || error_message;
+        thinkingEl.text.textContent = `I need a bit more context:\n${question}`;
+        pendingRunId = runId;
+        clarBar.classList.add('visible');
+        clarInput.focus();
+        scrollBottom();
+        return;
+      }
+
+      if (state === 'cancelled') {
+        thinkingEl.text.classList.remove('dots');
+        thinkingEl.text.textContent = 'Run was cancelled.';
+        scrollBottom();
+        return;
+      }
+    }
+
+    thinkingEl.bubble.classList.add('error');
+    thinkingEl.text.classList.remove('dots');
+    thinkingEl.text.textContent = 'Timed out waiting for response.';
+    scrollBottom();
+  }
+
+  // ── Send message ──────────────────────────────────────────────────────────
+
+  async function sendMessage(text) {
+    if (!text.trim()) return;
+    sendBtn.disabled = true;
+    promptEl.value = '';
+    promptEl.style.height = 'auto';
+
+    addMessage('user', text.trim());
+
+    const thinking = addMessage('assistant', 'Thinking', { cls: 'thinking', dotAnim: true });
+
+    let runId;
+    try {
+      const r = await fetch(`${apiBase()}/agent/ask`, {
+        method: 'POST',
+        headers: headers(),
+        body: JSON.stringify({ request_text: text.trim(), interface: 'chat', session_id: currentSessionId }),
+      });
+      if (!r.ok) {
+        const err = await r.json().catch(() => ({ detail: r.statusText }));
+        throw new Error(err.detail || r.statusText);
+      }
+      const data = await r.json();
+      runId = data.run_id;
+      if (data.session_id) currentSessionId = data.session_id;
+    } catch (e) {
+      thinking.bubble.classList.add('error');
+      thinking.bubble.classList.remove('thinking');
+      thinking.text.classList.remove('dots');
+      thinking.text.textContent = `Request failed: ${e.message}`;
+      sendBtn.disabled = false;
+      return;
+    }
+
+    sendBtn.disabled = false;
+    await pollUntilDone(runId, thinking);
+  }
+
+  // ── Clarification flow ────────────────────────────────────────────────────
+
+  async function sendClarification() {
+    const text = clarInput.value.trim();
+    if (!text || !pendingRunId) return;
+
+    clarBar.classList.remove('visible');
+    clarInput.value = '';
+
+    addMessage('user', text);
+    const thinking = addMessage('assistant', 'Got it, working on it', { cls: 'thinking', dotAnim: true });
+
+    try {
+      const r = await fetch(`${apiBase()}/agent/runs/${pendingRunId}/clarification`, {
+        method: 'POST',
+        headers: headers(),
+        body: JSON.stringify({ response: text }),
+      });
+      if (!r.ok) throw new Error((await r.json().catch(() => ({}))).detail || r.statusText);
+    } catch (e) {
+      thinking.bubble.classList.add('error');
+      thinking.text.classList.remove('dots');
+      thinking.text.textContent = `Failed to send clarification: ${e.message}`;
+      pendingRunId = null;
+      return;
+    }
+
+    const runId = pendingRunId;
+    pendingRunId = null;
+    await pollUntilDone(runId, thinking);
+  }
+
+  // ── Event listeners ───────────────────────────────────────────────────────
+
+  sendBtn.addEventListener('click', () => sendMessage(promptEl.value));
+
+  promptEl.addEventListener('keydown', e => {
+    if (e.key === 'Enter' && !e.shiftKey) {
+      e.preventDefault();
+      sendMessage(promptEl.value);
+    }
+  });
+
+  promptEl.addEventListener('input', () => {
+    promptEl.style.height = 'auto';
+    promptEl.style.height = Math.min(promptEl.scrollHeight, 160) + 'px';
+  });
+
+  clarSendBtn.addEventListener('click', sendClarification);
+  clarInput.addEventListener('keydown', e => {
+    if (e.key === 'Enter') sendClarification();
+  });
+
+  // ── Welcome message ───────────────────────────────────────────────────────
+
+  addMessage('assistant',
+    'Hi! Ask me anything about your data — I can discover dashboards, explain metrics, or answer business questions.',
+    { cls: '' }
+  );
+</script>
+</body>
+</html>

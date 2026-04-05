@@ -49,20 +49,25 @@ class ChartUploader:
                 x_field = d
                 break
 
+        # Pivot dims are group-by columns (all non-x dimensions).
+        # In Lightdash, pivot is declared at chart top level via pivotConfig,
+        # NOT inside the series. The series encode only references x + y fields.
         pivot_dims = [d for d in dimensions if d != x_field]
 
-        series = []
-        for metric in plan.metrics:
-            s: dict = {
+        # Use list() copies so PyYAML doesn't emit YAML anchors when the same
+        # list object appears in both metricQuery.metrics and chartConfig.yField.
+        metrics_copy = list(plan.metrics)
+
+        series = [
+            {
                 "type": chart_type,
                 "encode": {
                     "xRef": {"field": x_field},
                     "yRef": {"field": metric},
                 },
             }
-            if pivot_dims:
-                s["pivotReference"] = {"field": pivot_dims[0]}
-            series.append(s)
+            for metric in metrics_copy
+        ]
 
         if chart_type == "table":
             chart_config: dict = {"type": "table", "config": {}}
@@ -70,27 +75,27 @@ class ChartUploader:
             chart_config = {
                 "type": "cartesian",
                 "config": {
-                    "layout": {"xField": x_field, "yField": plan.metrics},
+                    "layout": {"xField": x_field, "yField": list(metrics_copy)},
                     "eChartsConfig": {"series": series},
                 },
             }
 
         now_iso = datetime.now(timezone.utc).strftime("%Y-%m-%dT%H:%M:%S.000Z")
-        return {
+        data: dict = {
             "name": plan.chart_title or plan.intent_summary or "Agent Chart",
             "description": plan.intent_summary or "",
             "updatedAt": now_iso,
             "tableName": plan.explore_name,
             "metricQuery": {
                 "exploreName": plan.explore_name,
-                "dimensions": plan.dimensions,
-                "metrics": plan.metrics,
+                "dimensions": list(plan.dimensions),
+                "metrics": list(metrics_copy),
                 "filters": {
                     "metrics": {"id": "chart_metric_filters", "and": []},
                     "dimensions": {"id": "chart_dimension_filters", "and": []},
                     "tableCalculations": {"id": "chart_tc_filters", "and": []},
                 },
-                "sorts": plan.sorts,
+                "sorts": list(plan.sorts),
                 "limit": min(plan.limit, 500),
                 "metricOverrides": {},
                 "dimensionOverrides": {},
@@ -99,10 +104,16 @@ class ChartUploader:
             },
             "chartConfig": chart_config,
             "slug": slug,
-            "tableConfig": {"columnOrder": plan.dimensions + plan.metrics},
+            "tableConfig": {"columnOrder": list(plan.dimensions) + list(metrics_copy)},
             "spaceSlug": "agent-answers",
             "version": 1,
         }
+
+        # pivotConfig: top-level Lightdash field for group-by dimensions
+        if pivot_dims:
+            data["pivotConfig"] = {"columns": list(pivot_dims)}
+
+        return data
 
     def _dashboard_yaml(
         self,

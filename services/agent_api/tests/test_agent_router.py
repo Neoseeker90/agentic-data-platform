@@ -50,7 +50,12 @@ def _make_mock_run_store(run: Run | None = None) -> MagicMock:
 def app_with_mock_store():
     """Return a FastAPI app instance with RunStore and container dependencies overridden."""
     from agent_api.config import Settings
-    from agent_api.dependencies import get_run_store, get_settings
+    from agent_api.dependencies import (
+        get_db_session,
+        get_run_store,
+        get_session_store,
+        get_settings,
+    )
     from agent_api.main import app
 
     mock_store = _make_mock_run_store()
@@ -71,8 +76,19 @@ def app_with_mock_store():
     mock_container.orchestrator.execute_run = AsyncMock(return_value=None)
     app.state.container = mock_container
 
+    # Mock session store so the ask endpoint doesn't hit the DB
+    mock_session_store = MagicMock()
+    mock_session_store.get_history = AsyncMock(return_value=[])
+    mock_session_store.save_turn = AsyncMock(return_value=None)
+
+    # Mock DB session so runs router doesn't need a real DB
+    async def mock_db_session():
+        yield MagicMock()
+
     app.dependency_overrides[get_run_store] = lambda: mock_store
+    app.dependency_overrides[get_session_store] = lambda: mock_session_store
     app.dependency_overrides[get_settings] = lambda: mock_settings
+    app.dependency_overrides[get_db_session] = mock_db_session
 
     yield app, mock_store
 

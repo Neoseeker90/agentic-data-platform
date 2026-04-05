@@ -41,10 +41,10 @@ async def test_search_returns_context_sources() -> None:
         client = make_client(http)
         results = await client.search("revenue")
 
-    assert len(results) == 3
+    assert len(results) == 4  # 1 dashboard + 1 chart + 2 fields
     names = [r.name for r in results]
-    assert "total_revenue" in names
-    assert "revenue_overview" in names
+    assert "Total Revenue" in names  # field label
+    assert "Revenue Overview" in names  # dashboard name
 
 
 @pytest.mark.asyncio

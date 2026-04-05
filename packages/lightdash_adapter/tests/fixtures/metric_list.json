@@ -1,29 +1,36 @@
 {
   "status": "ok",
-  "results": [
-    {
-      "type": "metric",
-      "name": "total_revenue",
-      "label": "Total Revenue",
-      "description": "Sum of all revenue across all channels",
-      "uuid": "metric-uuid-001",
-      "url": "https://lightdash.example.com/metrics/total_revenue"
-    },
-    {
-      "type": "metric",
-      "name": "active_customers",
-      "label": "Active Customers",
-      "description": "Count of customers with at least one order in the last 90 days",
-      "uuid": "metric-uuid-002",
-      "url": "https://lightdash.example.com/metrics/active_customers"
-    },
-    {
-      "type": "dashboard",
-      "name": "revenue_overview",
-      "label": "Revenue Overview",
-      "description": "Top-level revenue dashboard for finance team",
-      "uuid": "dashboard-uuid-001",
-      "url": "https://lightdash.example.com/dashboards/dashboard-uuid-001"
-    }
-  ]
+  "results": {
+    "dashboards": [
+      {
+        "uuid": "dashboard-uuid-001",
+        "name": "Revenue Overview",
+        "description": "Top-level revenue dashboard for finance team"
+      }
+    ],
+    "savedCharts": [
+      {
+        "uuid": "chart-uuid-001",
+        "name": "Total Revenue",
+        "description": "Sum of all revenue across all channels",
+        "chartType": "cartesian"
+      }
+    ],
+    "fields": [
+      {
+        "name": "total_revenue",
+        "label": "Total Revenue",
+        "description": "Sum of all revenue across all channels",
+        "fieldType": "metric"
+      },
+      {
+        "name": "active_customers",
+        "label": "Active Customers",
+        "description": "Count of customers with at least one order in the last 90 days",
+        "fieldType": "metric"
+      }
+    ],
+    "spaces": [],
+    "tables": []
+  }
 }

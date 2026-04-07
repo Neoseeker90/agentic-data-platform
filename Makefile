@@ -29,6 +29,14 @@ down:
 migrate:
 	./scripts/migrate.sh
 
+dev:
+	uv run uvicorn agent_api.main:app \
+		--reload \
+		--port 8000 \
+		--app-dir services/agent_api/src \
+		--reload-dir services/agent_api/src \
+		--reload-dir packages
+
 seed-docs:
 	uv run python scripts/seed_docs.py
 

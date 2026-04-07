@@ -29,6 +29,9 @@ class ExplicitFeedbackRequest(BaseModel):
     score: int | None = Field(None, ge=1, le=5)
     comment: str | None = None
     failure_reason: FeedbackFailureReason | None = None
+    # Human-provided labels from the in-chat feedback panel
+    expected_skill: str | None = None  # internal skill name user expected
+    error_label: str | None = None  # "wrong_skill"|"wrong_query"|"incomplete"|"hallucination"
 
 
 class ImplicitSignalRequest(BaseModel):

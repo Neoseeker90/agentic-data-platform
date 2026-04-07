@@ -27,6 +27,8 @@ async def _maybe_create_eval_case(
     run_id: uuid.UUID,
     failure_reason: str | None,
     comment: str | None,
+    expected_skill: str | None = None,
+    error_label: str | None = None,
 ) -> None:
     """Background task: if the user gave a thumbs-down, snapshot the run as a failing eval case."""
     try:
@@ -63,18 +65,23 @@ async def _maybe_create_eval_case(
                 return
 
             now = datetime.now(UTC)
+            # Build dataset tags — include error_label if provided
+            tags = ["auto", "thumbs_down"]
+            if error_label:
+                tags.append(error_label)
+
             case = EvaluationCaseORM(
                 case_id=uuid.uuid4(),
                 source_run_id=run_id,
                 request_text=run_row.request_text,
-                expected_skill=None,  # unknown at capture time
+                expected_skill=expected_skill,  # populated from in-chat label
                 expected_asset_refs=[],
                 observed_skill=run_row.selected_skill,
                 observed_response=observed_response,
                 feedback_score=None,
                 feedback_failure_reason=failure_reason,
-                human_label=None,
-                dataset_tags=["auto", "thumbs_down"],
+                human_label=error_label,  # "wrong_skill"|"wrong_query"|"incomplete"|"hallucination"
+                dataset_tags=tags,
                 status="failing",
                 created_by="auto",
                 created_at=now,
@@ -112,7 +119,15 @@ async def submit_feedback(
     # If thumbs-down, snapshot this run as a failing eval case in the background
     if body.helpful is False:
         failure_reason = body.failure_reason.value if body.failure_reason else None
-        asyncio.create_task(_maybe_create_eval_case(run_id, failure_reason, body.comment))
+        asyncio.create_task(
+            _maybe_create_eval_case(
+                run_id,
+                failure_reason,
+                body.comment,
+                expected_skill=body.expected_skill,
+                error_label=body.error_label,
+            )
+        )
 
     return FeedbackResponse(feedback_id=feedback_id, run_id=run_id)
 

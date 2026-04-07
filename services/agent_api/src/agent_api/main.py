@@ -8,7 +8,7 @@ from fastapi.middleware.cors import CORSMiddleware
 from agent_api.config import Settings
 from agent_api.db.engine import dispose_db_engine, init_db_engine
 from agent_api.middleware.request_id import RequestIdMiddleware
-from agent_api.routers import agent, feedback, health, runs
+from agent_api.routers import agent, feedback, health, runs, skills
 from agent_api.startup import AppContainer
 
 
@@ -47,3 +47,4 @@ app.include_router(health.router)
 app.include_router(agent.router, prefix="/agent", tags=["agent"])
 app.include_router(runs.router, prefix="/runs", tags=["runs"])
 app.include_router(feedback.router, prefix="/feedback", tags=["feedback"])
+app.include_router(skills.router, prefix="/agent", tags=["agent"])

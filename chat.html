@@ -417,6 +417,7 @@
 
   let pendingRunId = null;  // run waiting for clarification
   let currentSessionId = null; // persisted across all messages in this tab
+  let availableSkills = []; // populated on load from /agent/skills
 
   // ── Helpers ──────────────────────────────────────────────────────────────
 
@@ -479,7 +480,9 @@
     return { wrap, bubble, text, inner };
   }
 
-  function buildFeedbackRow(runId) {
+  function buildFeedbackRow(runId, observedSkill) {
+    const wrap = document.createElement('div');
+
     const row = document.createElement('div');
     row.className = 'feedback-row';
 
@@ -491,26 +494,126 @@
     const thumbDown = document.createElement('button');
     thumbDown.className = 'feedback-btn';
     thumbDown.textContent = '👎';
-    thumbDown.title = 'Not helpful';
+    thumbDown.title = 'Not helpful — tell me what went wrong';
 
-    async function sendFeedback(helpful) {
+    // ── Inline labelling panel (shown when 👎 is clicked) ────────────────
+    const panel = document.createElement('div');
+    panel.style.cssText = 'display:none;margin-top:10px;padding:12px 14px;background:#1a1208;border:1px solid #78350f;border-radius:8px;font-size:12px;';
+
+    // Error label radio buttons
+    const errorLabels = [
+      { value: 'wrong_skill',    label: 'Wrong type of answer' },
+      { value: 'wrong_query',    label: 'Wrong data or query' },
+      { value: 'incomplete',     label: 'Answer was incomplete' },
+      { value: 'hallucination',  label: 'Made up information' },
+    ];
+
+    const errorTitle = document.createElement('div');
+    errorTitle.style.cssText = 'color:#fcd34d;font-weight:600;margin-bottom:8px;';
+    errorTitle.textContent = 'What went wrong?';
+    panel.appendChild(errorTitle);
+
+    let selectedError = null;
+    const radioWrap = document.createElement('div');
+    radioWrap.style.cssText = 'display:flex;flex-wrap:wrap;gap:6px;margin-bottom:12px;';
+    errorLabels.forEach(({ value, label }) => {
+      const btn = document.createElement('button');
+      btn.dataset.value = value;
+      btn.textContent = label;
+      btn.style.cssText = 'padding:4px 10px;border-radius:999px;border:1px solid #78350f;background:none;color:#d97706;font-size:11px;cursor:pointer;transition:all 0.15s;';
+      btn.addEventListener('click', () => {
+        selectedError = value;
+        radioWrap.querySelectorAll('button').forEach(b => {
+          b.style.background = b === btn ? '#78350f' : 'none';
+          b.style.color = b === btn ? '#fcd34d' : '#d97706';
+        });
+      });
+      radioWrap.appendChild(btn);
+    });
+    panel.appendChild(radioWrap);
+
+    // Expected skill dropdown
+    const skillTitle = document.createElement('div');
+    skillTitle.style.cssText = 'color:#94a3b8;margin-bottom:6px;';
+    skillTitle.textContent = 'What should I have done instead? (optional)';
+    panel.appendChild(skillTitle);
+
+    const select = document.createElement('select');
+    select.style.cssText = 'width:100%;background:#0f1117;border:1px solid #1e2535;border-radius:6px;color:#e2e8f0;padding:6px 8px;font-size:12px;margin-bottom:10px;';
+    const blankOpt = document.createElement('option');
+    blankOpt.value = '';
+    blankOpt.textContent = '— select if different —';
+    select.appendChild(blankOpt);
+    availableSkills.forEach(skill => {
+      const opt = document.createElement('option');
+      opt.value = skill.name;
+      opt.textContent = skill.label;
+      if (skill.name === observedSkill) opt.selected = true;
+      select.appendChild(opt);
+    });
+    panel.appendChild(select);
+
+    // Submit + skip buttons
+    const btnRow = document.createElement('div');
+    btnRow.style.cssText = 'display:flex;gap:8px;';
+
+    const submitBtn = document.createElement('button');
+    submitBtn.textContent = 'Submit feedback';
+    submitBtn.style.cssText = 'flex:1;padding:7px 12px;background:#92400e;border:none;border-radius:6px;color:#fcd34d;cursor:pointer;font-size:12px;';
+
+    const skipBtn = document.createElement('button');
+    skipBtn.textContent = 'Skip';
+    skipBtn.style.cssText = 'padding:7px 12px;background:none;border:1px solid #334155;border-radius:6px;color:#64748b;cursor:pointer;font-size:12px;';
+
+    btnRow.appendChild(submitBtn);
+    btnRow.appendChild(skipBtn);
+    panel.appendChild(btnRow);
+
+    async function submitFeedback({ helpful, errorLabel, expectedSkill }) {
       try {
         await fetch(`${apiBase()}/feedback/${runId}`, {
           method: 'POST',
           headers: headers(),
-          body: JSON.stringify({ helpful }),
+          body: JSON.stringify({
+            helpful,
+            error_label: errorLabel || null,
+            expected_skill: expectedSkill || null,
+          }),
         });
-        thumbUp.classList.toggle('active', helpful === true);
-        thumbDown.classList.toggle('active', helpful === false);
-        thumbDown.classList.toggle('bad', helpful === false);
       } catch { /* silent */ }
     }
 
-    thumbUp.addEventListener('click', () => sendFeedback(true));
-    thumbDown.addEventListener('click', () => sendFeedback(false));
+    thumbUp.addEventListener('click', async () => {
+      await submitFeedback({ helpful: true });
+      thumbUp.classList.add('active');
+      thumbDown.disabled = true;
+      panel.style.display = 'none';
+    });
+
+    thumbDown.addEventListener('click', () => {
+      thumbDown.classList.add('active');
+      thumbDown.classList.add('bad');
+      thumbUp.disabled = true;
+      panel.style.display = 'block';
+      panel.scrollIntoView({ behavior: 'smooth', block: 'nearest' });
+    });
+
+    submitBtn.addEventListener('click', async () => {
+      const expectedSkill = select.value || null;
+      await submitFeedback({ helpful: false, errorLabel: selectedError, expectedSkill });
+      panel.innerHTML = '<div style="color:#4ade80;font-size:12px;padding:4px 0">✓ Thanks — logged as a training case</div>';
+    });
+
+    skipBtn.addEventListener('click', async () => {
+      await submitFeedback({ helpful: false });
+      panel.style.display = 'none';
+    });
+
     row.appendChild(thumbUp);
     row.appendChild(thumbDown);
-    return row;
+    wrap.appendChild(row);
+    wrap.appendChild(panel);
+    return wrap;
   }
 
   // ── Health check ─────────────────────────────────────────────────────────
@@ -576,7 +679,7 @@
           badge.textContent = selected_skill;
           thinkingEl.inner.insertBefore(badge, thinkingEl.text);
         }
-        thinkingEl.bubble.appendChild(buildFeedbackRow(runId));
+        thinkingEl.bubble.appendChild(buildFeedbackRow(runId, selected_skill));
         const meta = document.createElement('div');
         meta.className = 'run-meta';
         meta.textContent = `run: ${runId}`;
@@ -713,12 +816,71 @@
     if (e.key === 'Enter') sendClarification();
   });
 
-  // ── Welcome message ───────────────────────────────────────────────────────
+  // ── Welcome message (fetches skills dynamically) ─────────────────────────
 
-  addMessage('assistant',
-    'Hi! Ask me anything about your data — I can discover dashboards, explain metrics, or answer business questions.',
-    { cls: '' }
-  );
+  async function showWelcome() {
+    try {
+      const r = await fetch(`${apiBase()}/agent/skills`, { headers: headers() });
+      if (r.ok) {
+        const data = await r.json();
+        availableSkills = data.skills || [];
+      }
+    } catch { /* offline — use fallback */ }
+
+    const greetingEl = addMessage('assistant', '', { cls: '' });
+    const container = document.createElement('div');
+    container.style.lineHeight = '1.7';
+
+    const intro = document.createElement('p');
+    intro.style.marginBottom = '10px';
+    intro.textContent = 'Hi! I\'m your data assistant. Here\'s what I can help you with:';
+    container.appendChild(intro);
+
+    const skillsToShow = availableSkills.length > 0 ? availableSkills : [
+      { label: 'Build charts & query data',    description: 'Get numbers, trends, and charts', examples: ['net sales by BU last month'] },
+      { label: 'Answer business questions',     description: 'Qualitative, context-driven answers', examples: ['why did revenue drop?'] },
+      { label: 'Explain a metric',              description: 'What a metric means and how it\'s calculated', examples: ['what does CM3 mean?'] },
+      { label: 'Find dashboards & metrics',     description: 'Discover available analytics assets', examples: ['what dashboards do we have?'] },
+    ];
+
+    const list = document.createElement('ul');
+    list.style.cssText = 'list-style:none;padding:0;margin:0;display:flex;flex-direction:column;gap:8px;';
+    skillsToShow.forEach(skill => {
+      const li = document.createElement('li');
+      li.style.cssText = 'padding:8px 12px;background:#1a2030;border:1px solid #1e2535;border-radius:8px;';
+
+      const labelLine = document.createElement('div');
+      labelLine.style.cssText = 'font-weight:600;color:#a5b4fc;margin-bottom:2px;';
+      labelLine.textContent = skill.label;
+      li.appendChild(labelLine);
+
+      const descLine = document.createElement('div');
+      descLine.style.cssText = 'font-size:12px;color:#64748b;';
+      descLine.textContent = skill.description;
+      li.appendChild(descLine);
+
+      if (skill.examples && skill.examples.length > 0) {
+        const eg = document.createElement('div');
+        eg.style.cssText = 'font-size:11px;color:#334155;margin-top:3px;font-style:italic;';
+        eg.textContent = `e.g. "${skill.examples[0]}"`;
+        li.appendChild(eg);
+      }
+
+      list.appendChild(li);
+    });
+    container.appendChild(list);
+
+    const hint = document.createElement('p');
+    hint.style.cssText = 'margin-top:10px;font-size:12px;color:#475569;';
+    hint.textContent = 'Type your question below or try one of the examples above.';
+    container.appendChild(hint);
+
+    greetingEl.text.innerHTML = '';
+    greetingEl.text.appendChild(container);
+    scrollBottom();
+  }
+
+  showWelcome();
 </script>
 </body>
 </html>

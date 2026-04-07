@@ -45,9 +45,18 @@ class DiscoveryFormatter:
         return formatted
 
 
+def _human_name(name: str) -> str:
+    """Convert snake_case or raw identifiers to a readable display name."""
+    # If it already has spaces (e.g. Lightdash labels) leave it alone
+    if " " in name:
+        return name
+    return name.replace("_", " ").strip()
+
+
 def _format_metric_line(asset: RankedAsset) -> str:
     score_pct = f"{asset.relevance_score:.0%}"
-    header = f"- **{asset.name}** — {asset.reason} *(relevance: {score_pct})*"
+    display = _human_name(asset.name)
+    header = f"- **{display}** — {asset.reason} *(relevance: {score_pct})*"
     if asset.description:
         return f"{header}\n  {asset.description}"
     return header

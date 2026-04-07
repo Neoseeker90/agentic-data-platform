@@ -167,6 +167,29 @@ class DiscoveryExecutor:
                 f"Failed to construct RankedAsset objects from LLM output: {exc}"
             ) from exc
 
+        # Fallback: any source the LLM silently dropped still appears with a low score.
+        # This prevents dashboards from vanishing when the LLM forgets to rank them.
+        ranked_refs = {a.name for a in ranked_metrics + ranked_dashboards}
+        for source in context.sources:
+            if source.object_ref in ranked_refs:
+                continue
+            asset_type = _SOURCE_TYPE_TO_ASSET_TYPE.get(
+                source.source_type, AssetType.SEMANTIC_OBJECT
+            )
+            fallback = RankedAsset(
+                asset_type=asset_type,
+                name=source.object_ref,
+                description=source.snippet or None,
+                relevance_score=0.1,
+                url=source.metadata.get("url"),
+                authority=source.authority,
+                reason="Included from context (not ranked by model).",
+            )
+            if asset_type in _DASHBOARD_ASSET_TYPES:
+                ranked_dashboards.append(fallback)
+            else:
+                ranked_metrics.append(fallback)
+
         # Sort by relevance_score descending
         ranked_metrics.sort(key=lambda a: a.relevance_score, reverse=True)
         ranked_dashboards.sort(key=lambda a: a.relevance_score, reverse=True)

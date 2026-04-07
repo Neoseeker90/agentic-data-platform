@@ -376,7 +376,8 @@
     // Returns a DocumentFragment with inline formatting applied
     const frag = document.createDocumentFragment();
     // Split on links [text](url), **bold**, `code`, _italic_
-    const parts = text.split(/(\[([^\]]+)\]\(([^)]+)\)|\*\*([^*]+)\*\*|`([^`]+)`|_([^_]+)_)/);
+    // Non-capturing inner groups prevent split() from emitting sub-match content
+    const parts = text.split(/(\[(?:[^\]]+)\]\((?:[^)]+)\)|\*\*(?:[^*]+)\*\*|`(?:[^`]+)`|_(?:[^_]+)_)/);
     parts.forEach(part => {
       if (!part) return;
       const linkMatch = part.match(/^\[([^\]]+)\]\(([^)]+)\)$/);

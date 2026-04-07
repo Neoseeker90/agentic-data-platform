@@ -22,7 +22,9 @@ Return a JSON array where each element has:
 
 - You MUST include every candidate asset in the output — do not omit any.
 - Do NOT invent or hallucinate assets that were not in the candidate list.
-- Do NOT alter the `name` values — use them exactly as provided.
+- The `name` field MUST be copied verbatim from the candidates list — never rewrite, reformat, or remove underscores.
+- In the `reason` field, refer to assets by their exact `name` — do not reformat the name in prose.
+- Candidates include both dashboards and metrics/models — rank ALL of them regardless of type.
 - Score based on the user's query intent, not just keyword overlap.
 - If the query mentions a specific region, time period, or domain, use that context for scoring.
 - Be discriminating — not all assets should score high.

@@ -9,6 +9,7 @@ from contracts.plan import BasePlan
 from contracts.run import Run
 from contracts.validation import ValidationResult
 from dbt_adapter.manifest_reader import DbtManifestReader
+from lightdash_adapter.client import LightdashClient
 from lightdash_adapter.search import LightdashSearchService
 from skill_sdk.base import Skill
 
@@ -39,11 +40,14 @@ class DiscoverMetricsAndDashboardsSkill(Skill):
         cost_recorder: Any | None = None,
         planning_model: str | None = None,
         execution_model: str | None = None,
+        lightdash_client: LightdashClient | None = None,
     ) -> None:
         self._planner = DiscoveryPlanner(
             anthropic_client, prompt_loader, cost_recorder, planning_model=planning_model
         )
-        self._context_builder = DiscoveryContextBuilder(lightdash_search, dbt_reader, docs_searcher)
+        self._context_builder = DiscoveryContextBuilder(
+            lightdash_search, dbt_reader, docs_searcher, lightdash_client=lightdash_client
+        )
         self._validator = DiscoveryValidator()
         self._executor = DiscoveryExecutor(
             anthropic_client, prompt_loader, cost_recorder, execution_model=execution_model

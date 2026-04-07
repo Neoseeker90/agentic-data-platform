@@ -9,6 +9,7 @@ from business_docs_adapter.pg_fts import PgFtsSearcher
 from contracts.context_pack import ContextPack, ContextSource
 from contracts.run import Run
 from dbt_adapter.manifest_reader import DbtManifestReader
+from lightdash_adapter.client import LightdashClient
 from lightdash_adapter.search import LightdashSearchService
 
 from .models import DiscoveryPlan
@@ -24,10 +25,13 @@ class DiscoveryContextBuilder:
         lightdash_search: LightdashSearchService,
         dbt_reader: DbtManifestReader,
         docs_searcher: PgFtsSearcher,
+        lightdash_client: LightdashClient | None = None,
     ) -> None:
         self._lightdash = lightdash_search
+        self._lightdash_client = lightdash_client
         self._dbt = dbt_reader
         self._docs = docs_searcher
+        self._explore_names: list[str] | None = None  # cached on first use
 
     async def build_context(
         self,
@@ -36,11 +40,16 @@ class DiscoveryContextBuilder:
     ) -> ContextPack:
         tasks: list[Any] = []
 
-        # Per search_term: Lightdash, dbt models, dbt metrics
+        # Per search_term: Lightdash search + dbt METRICS only (not models)
+        # dbt model search is intentionally excluded from discovery — keyword
+        # matching on model names returns unrelated monitoring/infra models.
+        # Instead we add the Lightdash-exposed models once (not per term).
         for term in plan.search_terms:
             tasks.append(self._lightdash.find_relevant_context(term))
-            tasks.append(self._dbt_model_sources(term))
             tasks.append(self._dbt_metric_sources(term))
+
+        # Add dbt models for the explores Lightdash actually exposes
+        tasks.append(self._lightdash_explore_model_sources())
 
         # Full query against KPI glossary docs
         full_query = " ".join(plan.search_terms)
@@ -79,9 +88,26 @@ class DiscoveryContextBuilder:
             sources=capped,
         )
 
-    async def _dbt_model_sources(self, term: str) -> list[ContextSource]:
-        models = self._dbt.search_models(term)
-        return self._dbt.to_context_sources(models)
+    async def _lightdash_explore_model_sources(self) -> list[ContextSource]:
+        """Return dbt context sources only for models exposed in Lightdash explores."""
+        if self._lightdash_client is None:
+            return []
+
+        # Cache explore names for the lifetime of this skill instance
+        if self._explore_names is None:
+            try:
+                explores = await self._lightdash_client.list_explores()
+                self._explore_names = [e["name"] for e in explores]
+            except Exception as exc:
+                logger.warning("Failed to fetch Lightdash explores: %s", exc)
+                self._explore_names = []
+
+        sources: list[ContextSource] = []
+        for name in self._explore_names:
+            model = self._dbt.get_model(name)
+            if model:
+                sources.extend(self._dbt.to_context_sources([model]))
+        return sources
 
     async def _dbt_metric_sources(self, term: str) -> list[ContextSource]:
         metrics = self._dbt.search_metrics(term)

@@ -337,6 +337,7 @@ class AppContainer:
                 anthropic_client=anthropic_client,
                 prompt_loader=PromptLoader(prompts_dir=dmd_prompts),
                 lightdash_search=lightdash_search,
+                lightdash_client=lightdash_client,
                 dbt_reader=dbt_reader,
                 docs_searcher=docs_searcher,
                 planning_model=planning_model,

@@ -563,12 +563,14 @@ source = { editable = "packages/dbt_adapter" }
 dependencies = [
     { name = "contracts" },
     { name = "pydantic" },
+    { name = "pyyaml" },
 ]
 
 [package.metadata]
 requires-dist = [
     { name = "contracts", editable = "packages/contracts" },
     { name = "pydantic", specifier = ">=2.7.0" },
+    { name = "pyyaml", specifier = ">=6.0" },
 ]
 
 [[package]]

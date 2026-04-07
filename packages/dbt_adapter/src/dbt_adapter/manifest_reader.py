@@ -1,12 +1,22 @@
 from __future__ import annotations
 
 import json
+import logging
 from pathlib import Path
+
+try:
+    import yaml as _yaml  # optional — only used for YAML source enrichment
+
+    _YAML_AVAILABLE = True
+except ImportError:
+    _YAML_AVAILABLE = False
 
 from contracts.context_pack import ContextSource, SourceAuthority, SourceType
 
 from .exceptions import ManifestNotFoundError, ManifestParseError
 from .models import DbtColumn, DbtExposure, DbtMetric, DbtModel, DbtSource
+
+logger = logging.getLogger(__name__)
 
 
 class DbtManifestReader:
@@ -39,6 +49,10 @@ class DbtManifestReader:
             self._parse_sources(raw.get("sources", {}))
         except (KeyError, TypeError, ValueError) as exc:
             raise ManifestParseError(f"Unexpected manifest structure: {exc}") from exc
+
+        # Enrich metric descriptions from source YAML files — the compiled manifest
+        # often has stale or truncated descriptions; the YAML source files are fresher.
+        self._enrich_from_yaml_sources()
 
     def _parse_nodes(self, nodes: dict) -> None:
         for unique_id, node in nodes.items():
@@ -109,6 +123,78 @@ class DbtManifestReader:
                 tables=[t["name"] for t in s.get("tables", [])],
             )
             self._sources.append(source)
+
+    def _enrich_from_yaml_sources(self) -> None:
+        """Walk the dbt project YAML files and overwrite metric descriptions when the
+        source file has a richer description than what was compiled into manifest.json.
+
+        This handles the common case where descriptions are updated in YAML but the
+        manifest hasn't been recompiled yet (e.g. dbt uses Snowflake with browser auth).
+        """
+        if not _YAML_AVAILABLE:
+            return
+
+        # The manifest lives at <project>/target/manifest.json → project root is two levels up
+        project_root = self._manifest_path.parent.parent
+        models_dir = project_root / "models"
+        if not models_dir.exists():
+            return
+
+        enriched = 0
+        for yml_path in models_dir.rglob("*.yml"):
+            try:
+                doc = _yaml.safe_load(yml_path.read_text(encoding="utf-8"))
+            except Exception:
+                continue
+            if not isinstance(doc, dict):
+                continue
+
+            # Parse meta.metrics blocks on model nodes
+            for model_node in doc.get("models", []):
+                if not isinstance(model_node, dict):
+                    continue
+                for metric_def in model_node.get("meta", {}).get("metrics", []):
+                    name = (metric_def.get("name") or "").lower()
+                    desc = metric_def.get("description") or ""
+                    label = metric_def.get("label") or ""
+                    if name and name in self._metrics:
+                        existing = self._metrics[name]
+                        # Only overwrite if the YAML description is longer/richer
+                        if len(desc) > len(existing.description or ""):
+                            self._metrics[name] = DbtMetric(
+                                unique_id=existing.unique_id,
+                                name=existing.name,
+                                label=label or existing.label,
+                                description=desc,
+                                type=existing.type,
+                                expression=existing.expression,
+                                depends_on=existing.depends_on,
+                            )
+                            enriched += 1
+
+            # Parse top-level metrics blocks
+            for metric_def in doc.get("metrics", []):
+                if not isinstance(metric_def, dict):
+                    continue
+                name = (metric_def.get("name") or "").lower()
+                desc = metric_def.get("description") or ""
+                label = metric_def.get("label") or ""
+                if name and name in self._metrics:
+                    existing = self._metrics[name]
+                    if len(desc) > len(existing.description or ""):
+                        self._metrics[name] = DbtMetric(
+                            unique_id=existing.unique_id,
+                            name=existing.name,
+                            label=label or existing.label,
+                            description=desc,
+                            type=existing.type,
+                            expression=existing.expression,
+                            depends_on=existing.depends_on,
+                        )
+                        enriched += 1
+
+        if enriched:
+            logger.info("Enriched %d metric descriptions from YAML source files", enriched)
 
     def get_model(self, model_name: str) -> DbtModel | None:
         return self._models.get(model_name.lower())

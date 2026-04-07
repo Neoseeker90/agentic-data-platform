@@ -25,18 +25,18 @@ class DiscoveryFormatter:
         parts: list[str] = []
 
         if discovery_result.ranked_metrics:
-            parts.append("## Metrics")
+            parts.append("## Metrics\n")  # blank line after heading
             for asset in discovery_result.ranked_metrics:
                 parts.append(_format_metric_line(asset))
 
         if discovery_result.ranked_dashboards:
-            if parts:
-                parts.append("")
-            parts.append("## Dashboards")
+            parts.append("\n## Dashboards\n")  # blank lines around heading
             for asset in discovery_result.ranked_dashboards:
                 parts.append(_format_dashboard_line(asset))
 
-        formatted = "\n".join(parts)
+        # Join with double newlines so every item is its own paragraph block
+        # for the chat markdown renderer — prevents heading blocks from swallowing items
+        formatted = "\n\n".join(parts)
         logger.debug(
             "Formatted discovery result for run_id=%s: %d chars",
             result.run_id,

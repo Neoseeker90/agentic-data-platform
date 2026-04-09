@@ -24,10 +24,71 @@ class BusinessQuestionContextBuilder:
         lightdash_search: LightdashSearchService,
         dbt_reader: DbtManifestReader,
         docs_searcher: PgFtsSearcher,
+        semantic_search: Any | None = None,
     ) -> None:
         self._lightdash = lightdash_search
         self._dbt = dbt_reader
         self._docs = docs_searcher
+        self._semantic_search = semantic_search
+
+    async def _semantic_or_keyword(self, term: str) -> list[ContextSource]:
+        """Try semantic vector search. Falls back to keyword if unavailable or empty."""
+        if self._semantic_search is not None:
+            try:
+                from vector_store.models import ContentType  # noqa: PLC0415
+
+                results = await self._semantic_search.search(
+                    term,
+                    content_types=[
+                        ContentType.DBT_METRIC,
+                        ContentType.DBT_MODEL,
+                        ContentType.LIGHTDASH_DASHBOARD,
+                        ContentType.LIGHTDASH_FIELD,
+                    ],
+                    max_results=10,
+                )
+                if results:
+                    return results
+            except Exception as exc:
+                logger.warning("Semantic search failed, using keyword: %s", exc)
+        # Keyword fallback
+        ls, dbt = await asyncio.gather(
+            self._lightdash.find_relevant_context(term),
+            self._dbt_metric_sources(term),
+            return_exceptions=True,
+        )
+        sources: list[ContextSource] = []
+        for r in (ls, dbt):
+            if isinstance(r, Exception):
+                logger.warning("Keyword search subtask failed: %s", r)
+            else:
+                sources.extend(r)  # type: ignore
+        return sources
+
+    async def _semantic_or_keyword_dimension(self, dimension: str) -> list[ContextSource]:
+        """Try semantic vector search for a dimension. Falls back to keyword if unavailable or empty."""
+        if self._semantic_search is not None:
+            try:
+                from vector_store.models import ContentType  # noqa: PLC0415
+
+                results = await self._semantic_search.search(
+                    dimension,
+                    content_types=[
+                        ContentType.DBT_MODEL,
+                        ContentType.LIGHTDASH_FIELD,
+                    ],
+                    max_results=10,
+                )
+                if results:
+                    return results
+            except Exception as exc:
+                logger.warning("Semantic search failed, using keyword: %s", exc)
+        # Keyword fallback
+        try:
+            return await self._lightdash.find_relevant_context(dimension)
+        except Exception as exc:
+            logger.warning("Keyword search subtask failed: %s", exc)
+            return []
 
     async def build_context(
         self,
@@ -36,14 +97,13 @@ class BusinessQuestionContextBuilder:
     ) -> ContextPack:
         tasks: list[Any] = []
 
-        # 1. Per-metric searches
+        # 1. Per-metric searches (semantic with keyword fallback)
         for metric in plan.identified_metrics:
-            tasks.append(self._lightdash.find_relevant_context(metric))
-            tasks.append(self._dbt_metric_sources(metric))
+            tasks.append(self._semantic_or_keyword(metric))
 
-        # 2. Per-dimension searches
+        # 2. Per-dimension searches (semantic with keyword fallback)
         for dimension in plan.identified_dimensions:
-            tasks.append(self._lightdash.find_relevant_context(dimension))
+            tasks.append(self._semantic_or_keyword_dimension(dimension))
 
         # 3. Full request text against docs (KPI_GLOSSARY + BUSINESS_LOGIC)
         request_text = run.request_text

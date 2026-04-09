@@ -26,12 +26,48 @@ class DiscoveryContextBuilder:
         dbt_reader: DbtManifestReader,
         docs_searcher: PgFtsSearcher,
         lightdash_client: LightdashClient | None = None,
+        semantic_search: Any | None = None,
     ) -> None:
         self._lightdash = lightdash_search
         self._lightdash_client = lightdash_client
         self._dbt = dbt_reader
         self._docs = docs_searcher
+        self._semantic_search = semantic_search
         self._explore_names: list[str] | None = None  # cached on first use
+
+    async def _semantic_or_keyword(self, term: str) -> list[ContextSource]:
+        """Try semantic vector search. Falls back to keyword if unavailable or empty."""
+        if self._semantic_search is not None:
+            try:
+                from vector_store.models import ContentType  # noqa: PLC0415
+
+                results = await self._semantic_search.search(
+                    term,
+                    content_types=[
+                        ContentType.DBT_METRIC,
+                        ContentType.DBT_MODEL,
+                        ContentType.LIGHTDASH_DASHBOARD,
+                        ContentType.LIGHTDASH_FIELD,
+                    ],
+                    max_results=10,
+                )
+                if results:
+                    return results
+            except Exception as exc:
+                logger.warning("Semantic search failed, using keyword: %s", exc)
+        # Keyword fallback
+        ls, dbt = await asyncio.gather(
+            self._lightdash.find_relevant_context(term),
+            self._dbt_metric_sources(term),
+            return_exceptions=True,
+        )
+        sources: list[ContextSource] = []
+        for r in (ls, dbt):
+            if isinstance(r, Exception):
+                logger.warning("Keyword search subtask failed: %s", r)
+            else:
+                sources.extend(r)  # type: ignore
+        return sources
 
     async def build_context(
         self,
@@ -40,13 +76,12 @@ class DiscoveryContextBuilder:
     ) -> ContextPack:
         tasks: list[Any] = []
 
-        # Per search_term: Lightdash search + dbt METRICS only (not models)
+        # Per search_term: semantic search with keyword fallback.
         # dbt model search is intentionally excluded from discovery — keyword
         # matching on model names returns unrelated monitoring/infra models.
         # Instead we add the Lightdash-exposed models once (not per term).
         for term in plan.search_terms:
-            tasks.append(self._lightdash.find_relevant_context(term))
-            tasks.append(self._dbt_metric_sources(term))
+            tasks.append(self._semantic_or_keyword(term))
 
         # Add dbt models for the explores Lightdash actually exposes
         tasks.append(self._lightdash_explore_model_sources())

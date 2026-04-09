@@ -3,20 +3,19 @@ requires = ["hatchling"]
 build-backend = "hatchling.build"
 
 [project]
-name = "explain_metric_definition"
+name = "vector_store"
 version = "0.1.0"
 requires-python = ">=3.12"
 dependencies = [
   "contracts",
-  "skill_sdk",
-  "lightdash_adapter",
-  "dbt_adapter",
-  "business_docs_adapter",
-  "vector_store",
+  "pydantic>=2.7.0",
+  "asyncpg>=0.29.0",
+  "httpx>=0.27.0",
+  "pgvector>=0.3.0",
 ]
 
 [tool.hatch.build.targets.wheel]
-packages = ["src/explain_metric_definition"]
+packages = ["src/vector_store"]
 
 [tool.pytest.ini_options]
 asyncio_mode = "auto"

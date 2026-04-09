@@ -41,12 +41,17 @@ class DiscoverMetricsAndDashboardsSkill(Skill):
         planning_model: str | None = None,
         execution_model: str | None = None,
         lightdash_client: LightdashClient | None = None,
+        semantic_search: Any | None = None,
     ) -> None:
         self._planner = DiscoveryPlanner(
             anthropic_client, prompt_loader, cost_recorder, planning_model=planning_model
         )
         self._context_builder = DiscoveryContextBuilder(
-            lightdash_search, dbt_reader, docs_searcher, lightdash_client=lightdash_client
+            lightdash_search,
+            dbt_reader,
+            docs_searcher,
+            lightdash_client=lightdash_client,
+            semantic_search=semantic_search,
         )
         self._validator = DiscoveryValidator()
         self._executor = DiscoveryExecutor(

@@ -69,6 +69,11 @@ class Settings(BaseSettings):
     # OpenAI (takes effect when set; ignored when use_bedrock=True)
     openai_api_key: str = ""
 
+    # Semantic search / vector embeddings
+    embedding_enabled: bool = Field(default=True, validation_alias="embedding_enabled")
+    embedding_aws_region: str = "eu-central-1"
+    semantic_min_similarity: float = 0.3
+
     def resolve_model(self, model_id: str) -> str:
         """Return the correct model ID for the configured backend.
 

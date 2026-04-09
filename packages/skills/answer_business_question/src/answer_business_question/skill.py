@@ -40,12 +40,13 @@ class AnswerBusinessQuestionSkill(Skill):
         cost_recorder: Any | None = None,
         planning_model: str | None = None,
         execution_model: str | None = None,
+        semantic_search: Any | None = None,
     ) -> None:
         self._planner = BusinessQuestionPlanner(
             anthropic_client, prompt_loader, cost_recorder, planning_model=planning_model
         )
         self._context_builder = BusinessQuestionContextBuilder(
-            lightdash_search, dbt_reader, docs_searcher
+            lightdash_search, dbt_reader, docs_searcher, semantic_search=semantic_search
         )
         self._validator = BusinessQuestionValidator()
         self._executor = BusinessQuestionExecutor(

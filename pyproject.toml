@@ -25,6 +25,7 @@ explain_metric_definition = { workspace = true }
 execute_data_question = { workspace = true }
 agent_api = { workspace = true }
 skill_worker = { workspace = true }
+vector_store = { workspace = true }
 
 [tool.uv.workspace]
 members = [
@@ -41,6 +42,7 @@ members = [
   "packages/observability",
   "packages/feedback",
   "packages/evaluation",
+  "packages/vector_store",
   "packages/skills/answer_business_question",
   "packages/skills/discover_metrics_and_dashboards",
   "packages/skills/explain_metric_definition",
@@ -72,6 +74,7 @@ known-first-party = [
   "contracts", "skill_sdk", "router",
   "lightdash_adapter", "dbt_adapter", "business_docs_adapter",
   "validation", "artifacts", "observability", "feedback", "evaluation",
+  "vector_store",
   "answer_business_question", "discover_metrics_and_dashboards", "explain_metric_definition",
   "execute_data_question",
   "agent_api", "skill_worker",

@@ -125,6 +125,7 @@ class AppContainer:
         self._registry: SkillRegistry | None = None
         self._router: Router | None = None
         self._orchestrator = None  # RunOrchestrator — imported lazily to avoid circular deps
+        self._indexer = None  # SemanticIndexer — optional, None if vector search disabled
 
     @classmethod
     def create(cls, settings: Settings) -> AppContainer:
@@ -150,6 +151,11 @@ class AppContainer:
     def orchestrator(self):  # type: ignore[return]
         assert self._orchestrator is not None
         return self._orchestrator
+
+    @property
+    def indexer(self):
+        """SemanticIndexer if vector search is enabled, otherwise None."""
+        return self._indexer
 
     # ------------------------------------------------------------------
     # Build
@@ -206,6 +212,10 @@ class AppContainer:
         dbt_reader = self._build_dbt(settings)
         docs_searcher = self._build_docs(settings)
 
+        # Vector search — optional; gracefully disabled if unavailable
+        semantic_search, indexer = self._build_vector_search(settings, dbt_reader, lightdash_client)
+        self._indexer = indexer
+
         # Audit + run store
         auditor = RunAuditor(session_factory=session_factory)
         run_store = RunStore(session_factory)
@@ -225,6 +235,7 @@ class AppContainer:
             planning_model=planning_model,
             execution_model=execution_model,
             dbt_project_path=settings.dbt_project_path or "",
+            semantic_search=semantic_search,
         )
         self._registry = registry
 
@@ -296,6 +307,34 @@ class AppContainer:
 
         return PgFtsSearcher(database_url=settings.database_url)
 
+    def _build_vector_search(self, settings: Settings, dbt_reader: Any, lightdash_client: Any):
+        """Build the SemanticSearchService and SemanticIndexer.
+
+        Returns (search_service, indexer) or (None, None) if disabled or vector_store
+        package is unavailable.
+        """
+        if not settings.embedding_enabled:
+            logger.info("Semantic search disabled via embedding_enabled=false")
+            return None, None
+        try:
+            from vector_store import BedrockEmbedder, SemanticIndexer, VectorStore  # noqa: PLC0415
+            from vector_store.search_service import SemanticSearchService  # noqa: PLC0415
+        except ImportError:
+            logger.warning("vector_store not available — semantic search disabled")
+            return None, None
+
+        store = VectorStore(database_url=settings.database_url)
+        embedder = BedrockEmbedder(aws_region=settings.embedding_aws_region)
+        search_service = SemanticSearchService(embedder=embedder, store=store)
+        indexer = SemanticIndexer(
+            embedder=embedder,
+            store=store,
+            dbt_reader=dbt_reader,
+            lightdash_client=lightdash_client,
+        )
+        logger.info("Vector search configured (region=%s)", settings.embedding_aws_region)
+        return search_service, indexer
+
     def _register_skills(
         self,
         registry: SkillRegistry,
@@ -307,6 +346,7 @@ class AppContainer:
         planning_model: str,
         execution_model: str,
         dbt_project_path: str = "",
+        semantic_search=None,
     ) -> None:
         _pkg_root = Path(__file__).parent.parent.parent.parent.parent / "packages"
         # answer_business_question
@@ -323,6 +363,7 @@ class AppContainer:
                 docs_searcher=docs_searcher,
                 planning_model=planning_model,
                 execution_model=execution_model,
+                semantic_search=semantic_search,
             )
         )
 
@@ -342,6 +383,7 @@ class AppContainer:
                 docs_searcher=docs_searcher,
                 planning_model=planning_model,
                 execution_model=execution_model,
+                semantic_search=semantic_search,
             )
         )
 
@@ -359,6 +401,7 @@ class AppContainer:
                 docs_searcher=docs_searcher,
                 planning_model=planning_model,
                 execution_model=execution_model,
+                semantic_search=semantic_search,
             )
         )
 

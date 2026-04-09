@@ -12,6 +12,7 @@ dependencies = [
   "lightdash_adapter",
   "dbt_adapter",
   "business_docs_adapter",
+  "vector_store",
 ]
 
 [tool.hatch.build.targets.wheel]

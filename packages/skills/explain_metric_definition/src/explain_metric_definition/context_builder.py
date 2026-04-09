@@ -2,6 +2,7 @@ from __future__ import annotations
 
 import asyncio
 import logging
+from typing import Any
 
 from business_docs_adapter.models import DocType
 from business_docs_adapter.pg_fts import PgFtsSearcher
@@ -23,11 +24,49 @@ class ExplainMetricContextBuilder:
         lightdash_search: LightdashSearchService,
         dbt_reader: DbtManifestReader,
         docs_searcher: PgFtsSearcher,
+        semantic_search: Any | None = None,
     ) -> None:
         self._lightdash_client = lightdash_client
         self._lightdash_search = lightdash_search
         self._dbt = dbt_reader
         self._docs = docs_searcher
+        self._semantic_search = semantic_search
+
+    async def _semantic_metric_sources(self, metric_name: str) -> list[ContextSource]:
+        """Try semantic vector search for metric-specific content types.
+
+        Falls back to keyword (_get_lightdash_metric + _get_dbt_metric) if
+        semantic search is unavailable or returns no results.
+        """
+        if self._semantic_search is not None:
+            try:
+                from vector_store.models import ContentType  # noqa: PLC0415
+
+                results = await self._semantic_search.search(
+                    metric_name,
+                    content_types=[
+                        ContentType.DBT_METRIC,
+                        ContentType.LIGHTDASH_FIELD,
+                    ],
+                    max_results=10,
+                )
+                if results:
+                    return results
+            except Exception as exc:
+                logger.warning("Semantic search failed, using keyword: %s", exc)
+        # Keyword fallback: fetch both lightdash metric and dbt metric in parallel
+        ld, dbt = await asyncio.gather(
+            self._get_lightdash_metric(metric_name),
+            self._get_dbt_metric(metric_name),
+            return_exceptions=True,
+        )
+        sources: list[ContextSource] = []
+        for r in (ld, dbt):
+            if isinstance(r, Exception):
+                logger.warning("Keyword search subtask failed: %s", r)
+            else:
+                sources.extend(r)  # type: ignore
+        return sources
 
     async def build_context(
         self,
@@ -35,14 +74,12 @@ class ExplainMetricContextBuilder:
         run: Run,
     ) -> ContextPack:
         (
-            lightdash_metric_sources,
-            dbt_metric_sources,
+            metric_sources,
             kpi_glossary_sources,
             business_logic_sources,
             related_dashboard_sources,
         ) = await asyncio.gather(
-            self._get_lightdash_metric(plan.normalized_metric_name),
-            self._get_dbt_metric(plan.normalized_metric_name),
+            self._semantic_metric_sources(plan.normalized_metric_name),
             self._get_docs(plan.metric_name, DocType.KPI_GLOSSARY),
             self._get_docs(plan.metric_name, DocType.BUSINESS_LOGIC),
             self._get_related_dashboards(plan.metric_name),
@@ -51,8 +88,7 @@ class ExplainMetricContextBuilder:
 
         all_sources: list[ContextSource] = []
         for result in (
-            lightdash_metric_sources,  # type: ignore
-            dbt_metric_sources,  # type: ignore
+            metric_sources,  # type: ignore
             kpi_glossary_sources,  # type: ignore
             business_logic_sources,  # type: ignore
             related_dashboard_sources,  # type: ignore

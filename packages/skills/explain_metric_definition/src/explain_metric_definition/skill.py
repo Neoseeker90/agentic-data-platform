@@ -42,12 +42,17 @@ class ExplainMetricDefinitionSkill(Skill):
         cost_recorder: Any | None = None,
         planning_model: str | None = None,
         execution_model: str | None = None,
+        semantic_search: Any | None = None,
     ) -> None:
         self._planner = ExplainMetricPlanner(
             anthropic_client, prompt_loader, cost_recorder, planning_model=planning_model
         )
         self._context_builder = ExplainMetricContextBuilder(
-            lightdash_client, lightdash_search, dbt_reader, docs_searcher
+            lightdash_client,
+            lightdash_search,
+            dbt_reader,
+            docs_searcher,
+            semantic_search=semantic_search,
         )
         self._validator = ExplainMetricValidator()
         self._executor = ExplainMetricExecutor(

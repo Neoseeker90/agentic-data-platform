@@ -1,3 +1,5 @@
+import asyncio
+import contextlib
 import logging
 from collections.abc import AsyncGenerator
 from contextlib import asynccontextmanager
@@ -11,6 +13,8 @@ from agent_api.middleware.request_id import RequestIdMiddleware
 from agent_api.routers import agent, feedback, health, runs, skills
 from agent_api.startup import AppContainer
 
+_logger = logging.getLogger(__name__)
+
 
 def _configure_logging(log_level: str) -> None:
     logging.basicConfig(
@@ -19,13 +23,33 @@ def _configure_logging(log_level: str) -> None:
     )
 
 
+async def _run_indexer(indexer) -> None:
+    """Run the semantic indexer in the background, swallowing all errors gracefully."""
+    try:
+        await indexer.run_full_index()
+    except Exception as exc:
+        _logger.error("Semantic indexer failed: %s", exc)
+
+
 @asynccontextmanager
 async def lifespan(app: FastAPI) -> AsyncGenerator[None, None]:
     settings = Settings()
     _configure_logging(settings.log_level)
     init_db_engine(settings.database_url)
     app.state.container = AppContainer.create(settings)
+
+    indexer_task = None
+    indexer = getattr(app.state.container, "indexer", None)
+    if indexer is not None:
+        indexer_task = asyncio.create_task(_run_indexer(indexer), name="semantic-indexer")
+
     yield
+
+    if indexer_task is not None and not indexer_task.done():
+        indexer_task.cancel()
+        with contextlib.suppress(asyncio.CancelledError):
+            await indexer_task
+
     await dispose_db_engine()
 
 

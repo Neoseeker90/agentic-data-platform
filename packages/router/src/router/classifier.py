@@ -1,5 +1,6 @@
 import json
 import logging
+import time
 from datetime import UTC, datetime
 from typing import Any
 from uuid import UUID
@@ -23,11 +24,13 @@ class Router:
         anthropic_client: Any,  # AsyncAnthropic or AsyncAnthropicBedrock
         prompt_loader: PromptLoader,
         config: RouterConfig | None = None,
+        cost_recorder: Any | None = None,
     ) -> None:
         self._registry = registry
         self._client = anthropic_client
         self._prompt_loader = prompt_loader
         self.config = config or RouterConfig()
+        self._cost_recorder = cost_recorder
 
     async def route(self, run: Run) -> RouteDecision:
         """Classify run.request_text and return a RouteDecision."""
@@ -47,7 +50,7 @@ class Router:
         )
 
         logger.debug("Calling LLM for run_id=%s", run.run_id)
-        raw = await self._call_llm(prompt)
+        raw = await self._call_llm(prompt, run_id=run.run_id)
 
         decision = self._build_route_decision(run.run_id, raw)
         logger.info(
@@ -58,13 +61,28 @@ class Router:
         )
         return decision
 
-    async def _call_llm(self, prompt: str) -> dict:
+    async def _call_llm(self, prompt: str, run_id: UUID | None = None) -> dict:
         """Send the prompt to Anthropic and parse the JSON response."""
+        _t0 = time.monotonic()
         response = await self._client.messages.create(
             model=self.config.model_id,
             max_tokens=self.config.max_tokens,
             messages=[{"role": "user", "content": prompt}],
         )
+        _latency_ms = int((time.monotonic() - _t0) * 1000)
+
+        if self._cost_recorder is not None and run_id is not None:
+            await self._cost_recorder.record(
+                run_id=run_id,
+                stage="routing",
+                skill_name=None,
+                provider="bedrock",
+                model_id=self.config.model_id,
+                prompt_tokens=response.usage.input_tokens,
+                completion_tokens=response.usage.output_tokens,
+                latency_ms=_latency_ms,
+            )
+
         raw_text = response.content[0].text
         logger.debug("LLM raw response: %s", raw_text)
 

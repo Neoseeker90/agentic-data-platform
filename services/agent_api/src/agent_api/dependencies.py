@@ -42,6 +42,10 @@ def get_platform_router(request: Request):
     return request.app.state.container.router
 
 
+def get_auditor(request: Request):
+    return getattr(request.app.state.container, "auditor", None)
+
+
 # Type aliases for use in route signatures
 CurrentUser = Annotated[AuthenticatedUser, Depends(get_current_user)]
 DBSession = Annotated[AsyncSession, Depends(get_db_session)]

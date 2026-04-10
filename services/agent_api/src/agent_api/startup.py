@@ -105,6 +105,8 @@ class OpenAIClientAdapter:
 
 from agent_api.db.engine import get_session_factory  # noqa: E402
 from agent_api.db.run_store import RunStore  # noqa: E402
+from observability import CostRecorder  # noqa: E402
+from observability.db.cost_store import CostStore  # noqa: E402
 from observability.run_auditor import RunAuditor  # noqa: E402
 from router.classifier import Router  # noqa: E402
 from router.config import RouterConfig  # noqa: E402
@@ -151,6 +153,10 @@ class AppContainer:
     def orchestrator(self):  # type: ignore[return]
         assert self._orchestrator is not None
         return self._orchestrator
+
+    @property
+    def auditor(self):
+        return self._auditor
 
     @property
     def indexer(self):
@@ -216,8 +222,11 @@ class AppContainer:
         semantic_search, indexer = self._build_vector_search(settings, dbt_reader, lightdash_client)
         self._indexer = indexer
 
-        # Audit + run store
+        # Audit + run store + cost recording
+        cost_store = CostStore(session_factory)
+        cost_recorder = CostRecorder(store=cost_store)
         auditor = RunAuditor(session_factory=session_factory)
+        self._auditor = auditor
         run_store = RunStore(session_factory)
 
         # Skills — each gets its own PromptLoader pointed at its own prompts dir
@@ -236,6 +245,7 @@ class AppContainer:
             execution_model=execution_model,
             dbt_project_path=settings.dbt_project_path or "",
             semantic_search=semantic_search,
+            cost_recorder=cost_recorder,
         )
         self._registry = registry
 
@@ -253,6 +263,7 @@ class AppContainer:
                 clarification_threshold=settings.clarification_threshold,
                 model_id=router_model,
             ),
+            cost_recorder=cost_recorder,
         )
 
         # Orchestrator
@@ -347,6 +358,7 @@ class AppContainer:
         execution_model: str,
         dbt_project_path: str = "",
         semantic_search=None,
+        cost_recorder=None,
     ) -> None:
         _pkg_root = Path(__file__).parent.parent.parent.parent.parent / "packages"
         # answer_business_question
@@ -364,6 +376,7 @@ class AppContainer:
                 planning_model=planning_model,
                 execution_model=execution_model,
                 semantic_search=semantic_search,
+                cost_recorder=cost_recorder,
             )
         )
 
@@ -384,6 +397,7 @@ class AppContainer:
                 planning_model=planning_model,
                 execution_model=execution_model,
                 semantic_search=semantic_search,
+                cost_recorder=cost_recorder,
             )
         )
 
@@ -402,6 +416,7 @@ class AppContainer:
                 planning_model=planning_model,
                 execution_model=execution_model,
                 semantic_search=semantic_search,
+                cost_recorder=cost_recorder,
             )
         )
 
@@ -417,5 +432,6 @@ class AppContainer:
                 planning_model=planning_model,
                 execution_model=execution_model,
                 dbt_project_path=dbt_project_path,
+                cost_recorder=cost_recorder,
             )
         )

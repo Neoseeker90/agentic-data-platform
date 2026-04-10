@@ -2,6 +2,7 @@ from __future__ import annotations
 
 import json
 import logging
+import time
 from datetime import UTC, datetime
 from typing import Any
 
@@ -77,6 +78,7 @@ class ExplainMetricExecutor:
 
         logger.debug("Calling LLM for execution plan_id=%s", plan.plan_id)
 
+        _t0 = time.monotonic()
         try:
             response = await self._client.messages.create(
                 model=self._model_id,
@@ -85,6 +87,19 @@ class ExplainMetricExecutor:
             )
         except Exception as exc:
             raise ExecutionError(f"LLM call failed during execution: {exc}") from exc
+        _latency_ms = int((time.monotonic() - _t0) * 1000)
+
+        if self._cost_recorder is not None:
+            await self._cost_recorder.record(
+                run_id=plan.run_id,
+                stage="execution",
+                skill_name="explain_metric_definition",
+                provider="bedrock",
+                model_id=self._model_id,
+                prompt_tokens=response.usage.input_tokens,
+                completion_tokens=response.usage.output_tokens,
+                latency_ms=_latency_ms,
+            )
 
         raw_text = response.content[0].text
         logger.debug("Executor LLM raw response: %s", raw_text)

@@ -24,11 +24,16 @@ _BEDROCK_MODEL_MAP: dict[str, dict[str, str]] = {
         "eu": "eu.anthropic.claude-3-opus-20240229-v1:0",
     },
     "claude-sonnet-4-6": {
-        "us": "us.anthropic.claude-sonnet-4-5-20251101-v1:0",
-        "eu": "eu.anthropic.claude-sonnet-4-5-20251101-v1:0",
+        "us": "us.anthropic.claude-sonnet-4-6",
+        "eu": "eu.anthropic.claude-sonnet-4-6",
+    },
+    "claude-opus-4-5": {
+        "us": "us.anthropic.claude-opus-4-5-20251101-v1:0",
+        "eu": "eu.anthropic.claude-opus-4-5-20251101-v1:0",
     },
     "claude-opus-4-6": {
-        "us": "us.anthropic.claude-opus-4-5-20251101-v1:0",
+        "us": "us.anthropic.claude-opus-4-6",
+        "eu": "eu.anthropic.claude-opus-4-6",
     },
 }
 

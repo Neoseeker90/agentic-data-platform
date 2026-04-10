@@ -697,7 +697,7 @@
         return;
       }
 
-      if (state === 'created' && (clarification_question || error_message)) {
+      if ((state === 'created' || state === 'awaiting_skill_clarification') && (clarification_question || error_message)) {
         // parked awaiting clarification
         thinkingEl.bubble.classList.add('clarification');
         thinkingEl.bubble.classList.remove('thinking');

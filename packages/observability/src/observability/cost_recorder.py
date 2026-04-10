@@ -35,6 +35,10 @@ class CostRecorder:
         "eu.anthropic.claude-3-5-sonnet-20241022-v2:0": Decimal("0.003"),
         "us.anthropic.claude-sonnet-4-5-20251101-v1:0": Decimal("0.003"),
         "eu.anthropic.claude-sonnet-4-5-20251101-v1:0": Decimal("0.003"),
+        "us.anthropic.claude-sonnet-4-6": Decimal("0.003"),
+        "eu.anthropic.claude-sonnet-4-6": Decimal("0.003"),
+        "us.anthropic.claude-opus-4-5-20251101-v1:0": Decimal("0.015"),
+        "eu.anthropic.claude-opus-4-5-20251101-v1:0": Decimal("0.015"),
         # OpenAI
         "gpt-4o": Decimal("0.0025"),
         "gpt-4o-mini": Decimal("0.00015"),
@@ -59,6 +63,10 @@ class CostRecorder:
         "eu.anthropic.claude-3-5-sonnet-20241022-v2:0": Decimal("0.015"),
         "us.anthropic.claude-sonnet-4-5-20251101-v1:0": Decimal("0.015"),
         "eu.anthropic.claude-sonnet-4-5-20251101-v1:0": Decimal("0.015"),
+        "us.anthropic.claude-sonnet-4-6": Decimal("0.015"),
+        "eu.anthropic.claude-sonnet-4-6": Decimal("0.015"),
+        "us.anthropic.claude-opus-4-5-20251101-v1:0": Decimal("0.075"),
+        "eu.anthropic.claude-opus-4-5-20251101-v1:0": Decimal("0.075"),
         # OpenAI
         "gpt-4o": Decimal("0.010"),
         "gpt-4o-mini": Decimal("0.00060"),

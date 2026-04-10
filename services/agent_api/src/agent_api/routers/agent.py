@@ -14,6 +14,7 @@ from agent_api.db.run_store import RunStore
 from agent_api.db.session_store import SessionStore
 from agent_api.dependencies import (
     CurrentUser,
+    get_auditor,
     get_orchestrator,
     get_platform_router,
     get_run_store,
@@ -88,10 +89,17 @@ async def _route_and_execute(
     orchestrator,
     session_id: uuid.UUID,
     session_store: SessionStore,
+    auditor=None,
 ) -> None:
     """Background task: route the run then execute it, then persist the assistant turn."""
     try:
         decision = await platform_router.route(run)
+
+        if auditor is not None:
+            try:
+                await auditor.record_route_decision(decision)
+            except Exception:
+                logger.warning("Failed to persist route decision for run_id=%s", run.run_id, exc_info=True)
 
         if decision.requires_clarification:
             await run_store.update_state(
@@ -156,8 +164,9 @@ async def ask(
 
     platform_router = get_platform_router(request)
     orchestrator = get_orchestrator(request)
+    auditor = get_auditor(request)
     asyncio.create_task(
-        _route_and_execute(run, platform_router, run_store, orchestrator, session_id, session_store)
+        _route_and_execute(run, platform_router, run_store, orchestrator, session_id, session_store, auditor)
     )
     return AskResponse(run_id=run.run_id, state=str(run.state), session_id=session_id)
 
@@ -205,9 +214,10 @@ async def submit_clarification(
 
     platform_router = get_platform_router(request)
     orchestrator = get_orchestrator(request)
+    auditor = get_auditor(request)
     asyncio.create_task(
         _route_and_execute(
-            new_run, platform_router, run_store, orchestrator, session_id, session_store
+            new_run, platform_router, run_store, orchestrator, session_id, session_store, auditor
         )
     )
     return AskResponse(run_id=new_run.run_id, state=str(new_run.state), session_id=session_id)

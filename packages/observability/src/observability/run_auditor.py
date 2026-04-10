@@ -14,11 +14,13 @@ from agent_api.db.models import (
     ContextPackORM,
     ExecutionResultORM,
     PlanORM,
+    RouteDecisionORM,
     ValidationResultORM,
 )
 from contracts.context_pack import ContextPack
 from contracts.execution import ExecutionResult
 from contracts.plan import BasePlan
+from contracts.route import RouteDecision
 from contracts.run import Run
 from contracts.validation import ValidationResult
 
@@ -49,6 +51,25 @@ class RunAuditor:
     # ------------------------------------------------------------------
     # Protocol methods
     # ------------------------------------------------------------------
+
+    async def record_route_decision(self, decision: RouteDecision) -> None:
+        """Persist a RouteDecisionORM row."""
+        async with self._session_factory() as session:
+            orm = RouteDecisionORM(
+                run_id=decision.run_id,
+                skill_name=decision.skill_name,
+                confidence=decision.confidence,
+                rationale=decision.rationale,
+                requires_clarification=decision.requires_clarification,
+                clarification_message=decision.clarification_message,
+                candidate_skills=decision.candidate_skills or [],
+                prompt_version_id=decision.prompt_version_id,
+                model_id=decision.model_id,
+                decided_at=decision.decided_at,
+            )
+            session.add(orm)
+            await session.commit()
+            logger.debug("record_route_decision run_id=%s skill=%s", decision.run_id, decision.skill_name)
 
     async def record_plan(self, run: Run, plan: BasePlan) -> None:
         """Upsert a PlanORM row (plan_id as PK)."""
